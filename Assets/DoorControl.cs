@@ -19,17 +19,17 @@ public class DoorControl : MonoBehaviour
             animator.SetTrigger("isOpen");
         } else 
         {
-            animator.ResetTrigger("isOpen");
+  //          animator.ResetTrigger("isOpen");
         }
     }
-    private void OnTriggerEnter()
-    {
-        Collider collider = GetComponent<Collider>();
-        if (collider.tag == "Player") {
-           animator.SetTrigger("isOpen");
-        } else 
-        {
-            animator.ResetTrigger("isOpen");
-        }
-     }
+    // private void OnTriggerEnter()
+    // {
+    //     Collider collider = GetComponent<Collider>();
+    //     if (collider.tag == "Player") {
+    //        animator.SetTrigger("isOpen");
+    //     } else 
+    //     {
+    //         animator.ResetTrigger("isOpen");
+    //     }
+    //  }
 }
