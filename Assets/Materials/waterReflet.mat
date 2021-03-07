@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: waterReflet
   m_Shader: {fileID: 4800000, guid: bac80198b1110ea4e913ac312c5b638b, type: 3}
-  m_ShaderKeywords: 
+  m_ShaderKeywords: _VIGNETTEENABLED_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -71,6 +71,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _VignetteEnabled: 1
     - _ZWrite: 1
     m_Colors:
     - _BGColor: {r: 0.5471698, g: 0.5471698, b: 0.5471698, a: 0}

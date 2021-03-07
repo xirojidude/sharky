@@ -5,6 +5,7 @@
         _MainTex ("Texture", 2D) = "white" {}
         _FGColor ("Foreground Color ", Color) = (.55, .75, 1., 1.)
         _BGColor ("Background Color ", Color) = (.0, .3, .5, 1.)
+        [MaterialToggle] _VignetteEnabled ("Vignette", Float ) = 0
     }
     SubShader
     {
@@ -37,6 +38,7 @@
             sampler2D _MainTex;
             float4 _MainTex_ST;
             float4 _FGColor, _BGColor;
+            uniform fixed _VignetteEnabled;
 
 
             #define tau 6.28318530718
@@ -128,6 +130,11 @@
             col += (1.-v) * _BGColor;  
             
             // Output to screen
+
+            if (_VignetteEnabled) {
+                col = col * (1. - smoothstep(.1,.9,length(i.uv.x - .5)));
+                //col = i.uv.y;
+            }
             return col;
         }
  
