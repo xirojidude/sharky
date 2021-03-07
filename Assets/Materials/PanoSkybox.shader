@@ -35,10 +35,12 @@ Shader "Skybox/PanoSkybox" {
             
             float2 MonoPanoProjection( float3 coords ){
                 float3 normalizedCoords = normalize(coords);
-                float latitude = acos(normalizedCoords.y);
-                float longitude = clamp(atan2(normalizedCoords.z, normalizedCoords.x),-3.1459,3.14159);
-                float2 sphereCoords = float2(longitude, latitude) * float2(1.0/UNITY_PI, 1.0/UNITY_PI);
-                sphereCoords = float2(1.0,1.) - sphereCoords;
+                float latitude = 1.-(acos(normalizedCoords.y)/UNITY_PI);
+                float longitude = 1.-clamp(atan2(normalizedCoords.z, normalizedCoords.x),-3.145926535,3.145926535)/UNITY_PI;
+
+                float2 sphereCoords = float2(longitude, latitude); // * float2(1.0/UNITY_PI, 1.0/UNITY_PI);
+                //sphereCoords = float2(1.0,1.) - sphereCoords;
+                //return sphereCoords;
                 return (sphereCoords + float4(0, 1-unity_StereoEyeIndex,1,1.0).xy) * float4(0, 1-unity_StereoEyeIndex,1,1.0).zw;
             }
             
@@ -62,16 +64,23 @@ Shader "Skybox/PanoSkybox" {
             #define TRANSFORM_TEX2(tex,name) (float2(0.5, 1.0) * tex.xy * name##_ST.xy + name##_ST.zw)
 
             float4 frag(VertexOutput i) : COLOR {
-                float3 viewDirection = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
-////// Lighting:
-////// Emissive:
-                float3 node_6020 = (viewDirection*(-1.0));
-//                float2 _StereoEnabled_var = lerp( MonoPanoProjection( node_6020 ), StereoPanoProjection( node_6020 ), _StereoEnabled );
-                float2 _StereoEnabled_var = MonoPanoProjection( node_6020 );
-                float4 _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX2(_StereoEnabled_var, _MainTex));
-//                float4 _MainTex_var = tex2D(_MainTex,node_6020);
-                float3 emissive = _MainTex_var.rgb;
-                float3 finalColor = emissive;
+                float3 viewDirection = normalize(i.posWorld.xyz- _WorldSpaceCameraPos.xyz  );
+
+                float3 finalColor = float4(1.,0.,0.,0.);
+                float2 _StereoEnabled_var;
+                float4 _MainTex_var;
+                // fix for seam artifact at z=0
+                if (viewDirection.z > -.001 && viewDirection.z < .001 && viewDirection.x <0) {
+                        viewDirection.z =.001; 
+//                      _StereoEnabled_var = lerp( MonoPanoProjection( viewDirection ), StereoPanoProjection( viewDirection ), _StereoEnabled );
+                        _StereoEnabled_var = MonoPanoProjection( viewDirection );
+                        _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX2(_StereoEnabled_var, _MainTex));
+                } else {
+//                      _StereoEnabled_var = lerp( MonoPanoProjection( viewDirection ), StereoPanoProjection( viewDirection ), _StereoEnabled );
+                        _StereoEnabled_var = MonoPanoProjection( viewDirection );
+                        _MainTex_var = tex2D(_MainTex,TRANSFORM_TEX2(_StereoEnabled_var, _MainTex));
+                }
+                finalColor = _MainTex_var.rgb;
                 return fixed4(finalColor,1);
             }
             ENDCG

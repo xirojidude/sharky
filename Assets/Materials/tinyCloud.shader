@@ -4,7 +4,7 @@ Shader "Skybox/tinyCloud"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-     }
+    }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -20,44 +20,45 @@ Shader "Skybox/tinyCloud"
 
             #include "UnityCG.cginc"
 
-            struct appdata
-            {
+            struct VertexInput {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
-
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
+            struct VertexOutput {
                 float4 vertex : SV_POSITION;
+                float4 posWorld : TEXCOORD0;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
-            v2f vert (appdata v)
+
+           #define TRANSFORM_TEX2(tex,name) (float2(0.5, 1.0) * tex.xy * name##_ST.xy + name##_ST.zw)
+
+            VertexOutput vert (VertexInput v)
             {
-                v2f o;
+                VertexOutput o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+                float2 uv = v.uv;  //TRANSFORM_TEX2(v.uv, _MainTex);
+                o.posWorld = float4(uv.x,uv.y,1.,1.);
                 return o;
             }
 
-            #define T tex2D(_MainTex,(s*ray.zw+ceil(s*ray.x))/10.00).y/(s+=s)*4.
+            #define T tex2D(_MainTex,(s*ray.zw+ceil(s*ray.x))/200.0).y/(s+=s)*4.
 
-            fixed4 frag (v2f i) : SV_Target
+            fixed4 frag (VertexOutput i) : SV_Target
             {
-                float2 uv= float2(i.vertex);
-//                float4 p,d=float4(.8,0,x/iResolution.y-.8),c=float4(.6,.7,d);
+                float3 viewDirection = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
+                float2 uv= i.posWorld;
+                //*Note: GLSL texture coords are from -1 to +1  but we use 0 to +1 in HLSL 
+                //float4 p,d=float4(.8,0,x/iResolution.y-.8),c=float4(.6,.7,d);
 
                 //ray is ray position during ray march
                 //ray.y is never used. 
                 //ray.x is actually depth into the screen, 
-                //ray.z is the screen x axis, 
-                //ray.w is the screen y axis (aka the up axis)
-                float4 ray= float4(.8,0,uv.x-.8,uv.y-.8);
+                //ray.z is the screen x axis,  should go from -1 to +1
+                //ray.w is the screen y axis (aka the up axis)   should go from -1 to +1
+                float4 ray= float4(.8,0,uv.x-.8,uv.y-.8); 
                 
                 // d is direction that the ray for this pixel travels in 
                 // 0.8 is subtracted from d.z and d.w (the screen x and screen y axes)
@@ -75,15 +76,20 @@ Shader "Skybox/tinyCloud"
                 // subtracts d.w which is the pixel’s ray march direction on the screen y axis. 
                 // This has a nice effect of making a nice sky blue gradient.
                 float4 O=c-d.w;
+                //O = ray;    
 
-                for(float f,s,t=10.00+sin(dot(uv,uv));--t>0.;ray=.05*mul(t,d))
-                    ray.xz+=_Time.y,
-                    s=2.,
-                    f=ray.w+1.-T-T-T-T,  // uses T macro from above
-                    f<0.?O+=(O-1.-f*c.zyxw)*f*.4:O;
+                for(float f,s,t=100.0+sin(dot(uv,uv));t>0.;t--) {
+                    ray=.05*t*d;
+                    ray.xz+=_Time.y*.05;
+                    s=2.;
+                    f=ray.w+1.-T-T-T-T;  // uses T macro from above
+                    if(f<0.) {
+                        O+=(O-1.-f*c.zyxw)*f*.4;
+                    }
+                }
                 return O;
             }
-            ENDCG
+           ENDCG
         }
     }
 }
