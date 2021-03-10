@@ -71,9 +71,10 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _VignetteEnabled: 0
     - _ZWrite: 1
     m_Colors:
-    - _BGColor: {r: 0.4235938, g: 0.48700598, b: 0.5377358, a: 0.19607843}
+    - _BGColor: {r: 0.42359376, g: 0.48700583, b: 0.53773576, a: 0.08235294}
     - _Color: {r: 0, g: 0.86338776, b: 0.9245283, a: 0.5019608}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _FGColor: {r: 0.55891776, g: 0.6822981, b: 0.754717, a: 1}
+    - _FGColor: {r: 1, g: 1, b: 1, a: 0.34901962}
