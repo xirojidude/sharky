@@ -286,9 +286,7 @@ namespace VRCSDK2
                         userTags.text = userTags.text + " ";
                     }
 
-                    ImageDownloader.DownloadImage(worldRecord.imageUrl, 0, delegate (Texture2D obj) {
-                        bpImage.texture = obj;
-                    });
+                    ImageDownloader.DownloadImage(worldRecord.imageUrl, 0, obj => bpImage.texture = obj, null);
                 }
                 else // user does not own world id associated with descriptor
                 {
@@ -640,9 +638,7 @@ namespace VRCSDK2
             {
                 bpImage.enabled = true;
                 liveBpImage.enabled = false;
-                ImageDownloader.DownloadImage(worldRecord.imageUrl, 0, delegate (Texture2D obj) {
-                    bpImage.texture = obj;
-                });
+                ImageDownloader.DownloadImage(worldRecord.imageUrl, 0, obj => bpImage.texture = obj, null);
             }
         }
 

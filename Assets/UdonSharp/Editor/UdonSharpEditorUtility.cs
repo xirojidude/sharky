@@ -1,6 +1,7 @@
 ﻿
 using JetBrains.Annotations;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -71,7 +72,7 @@ namespace UdonSharpEditor
             if (uSharpProgram == null || assemblyProgram == null)
                 return null;
 
-            string[] symbols = uSharpProgram.SymbolTable.GetSymbols();
+            ImmutableArray<string> symbols = uSharpProgram.SymbolTable.GetSymbols();
 
             foreach (string symbol in symbols)
             {
@@ -135,9 +136,9 @@ namespace UdonSharpEditor
         /// <param name="components"></param>
         /// <returns></returns>
         [PublicAPI]
-        public static UdonBehaviour[] ConvertToUdonBehaviours(UdonSharpBehaviour[] components)
+        public static UdonBehaviour[] ConvertToUdonBehaviours(UdonSharpBehaviour[] components, bool convertChildren = false)
         {
-            return ConvertToUdonBehavioursInternal(components, false, false);
+            return ConvertToUdonBehavioursInternal(components, false, false, convertChildren);
         }
 
         /// <summary>
@@ -147,9 +148,9 @@ namespace UdonSharpEditor
         /// <param name="components"></param>
         /// <returns></returns>
         [PublicAPI]
-        public static UdonBehaviour[] ConvertToUdonBehavioursWithUndo(UdonSharpBehaviour[] components)
+        public static UdonBehaviour[] ConvertToUdonBehavioursWithUndo(UdonSharpBehaviour[] components, bool convertChildren = false)
         {
-            return ConvertToUdonBehavioursInternal(components, true, false);
+            return ConvertToUdonBehavioursInternal(components, true, false, convertChildren);
         }
 
         static internal Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
@@ -168,8 +169,8 @@ namespace UdonSharpEditor
                     if (programAsset && programAsset.sourceCsScript != null && !_programAssetLookup.ContainsKey(programAsset.sourceCsScript))
                     {
                         _programAssetLookup.Add(programAsset.sourceCsScript, programAsset);
-                        if (programAsset.sourceCsScript.GetClass() != null)
-                            _programAssetTypeLookup.Add(programAsset.sourceCsScript.GetClass(), programAsset);
+                        if (programAsset.GetClass() != null)
+                            _programAssetTypeLookup.Add(programAsset.GetClass(), programAsset);
                     }
                 }
             }
@@ -346,7 +347,7 @@ namespace UdonSharpEditor
             if (!IsUdonSharpBehaviour(udonBehaviour))
                 return null;
 
-            return ((UdonSharpProgramAsset)udonBehaviour.programSource).sourceCsScript.GetClass();
+            return ((UdonSharpProgramAsset)udonBehaviour.programSource).GetClass();
         }
 
         static FieldInfo _skipEventsField = null;
@@ -389,7 +390,7 @@ namespace UdonSharpEditor
                 return proxyBehaviour;
 
             // We've failed to find an existing proxy behaviour so we need to create one
-            System.Type scriptType = udonSharpProgram.sourceCsScript.GetClass();
+            System.Type scriptType = udonSharpProgram.GetClass();
 
             if (scriptType == null)
                 return null;
@@ -586,11 +587,9 @@ namespace UdonSharpEditor
             }
         }
 
-        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool showPrompts)
+        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool showPrompts, bool convertChildren)
         {
             components = components.Distinct().ToArray();
-
-            bool convertChildren = true;
 
             if (showPrompts)
             {
@@ -709,7 +708,7 @@ namespace UdonSharpEditor
                 try
                 {
                     if (convertChildren)
-                        UdonSharpEditorUtility.CopyProxyToUdon(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithCreateUndo : ProxySerializationPolicy.All);
+                        UdonSharpEditorUtility.CopyProxyToUdon(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithCreateUndo : ProxySerializationPolicy.AllWithCreate);
                     else
                         UdonSharpEditorUtility.CopyProxyToUdon(targetObject, ProxySerializationPolicy.RootOnly);
                 }

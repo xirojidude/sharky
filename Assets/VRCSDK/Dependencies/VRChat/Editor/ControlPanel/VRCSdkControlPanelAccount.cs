@@ -2,6 +2,7 @@
 using UnityEditor;
 using VRC.Core;
 using System.Text.RegularExpressions;
+using VRC.SDKBase.Editor;
 
 public partial class VRCSdkControlPanel : EditorWindow
 {
@@ -18,15 +19,11 @@ public partial class VRCSdkControlPanel : EditorWindow
     {
         get
         {
-            if (EditorPrefs.HasKey("sdk#username"))
-                return EditorPrefs.GetString("sdk#username");
             return null;
         }
         set
         {
-            EditorPrefs.SetString("sdk#username", value);
-            if (string.IsNullOrEmpty(value))
-                EditorPrefs.DeleteKey("sdk#username");
+            EditorPrefs.DeleteKey("sdk#username");
         }
     }
 
@@ -34,52 +31,16 @@ public partial class VRCSdkControlPanel : EditorWindow
     {
         get
         {
-            if (EditorPrefs.HasKey("sdk#password"))
-                return EditorPrefs.GetString("sdk#password");
             return null;
         }
         set
         {
-            EditorPrefs.SetString("sdk#password", value);
-            if (string.IsNullOrEmpty(value))
-                EditorPrefs.DeleteKey("sdk#password");
+            EditorPrefs.DeleteKey("sdk#password");
         }
     }
 
-    static string _username = null;
-    static string _password = null;
-
-    static string username
-    {
-        get
-        {
-            if (!string.IsNullOrEmpty(_username))
-                return _username;
-            else
-                _username = storedUsername;
-            return _username;
-        }
-        set
-        {
-            _username = value;
-        }
-    }
-
-    static string password
-    {
-        get
-        {
-            if (!string.IsNullOrEmpty(_password))
-                return _password;
-            else
-                _password = storedPassword;
-            return _password;
-        }
-        set
-        {
-            _password = value;
-        }
-    }
+    static string username { get; set; } = null;
+    static string password { get; set; } = null;
 
     static ApiServerEnvironment serverEnvironment
     {
@@ -199,13 +160,8 @@ public partial class VRCSdkControlPanel : EditorWindow
             InitAccount();
 
             ApiServerEnvironment newEnv = ApiServerEnvironment.Release;
-            #if VRC_SDK_VRCSDK2
-                if (VRCSettings.Get().DisplayAdvancedSettings)
+                if (VRCSettings.DisplayAdvancedSettings)
                     newEnv = (ApiServerEnvironment)EditorGUILayout.EnumPopup("Use API", serverEnvironment);
-            #elif VRC_SDK_VRCSDK3
-                if (VRC.SDK3.Editor.VRCSettings.Get().DisplayAdvancedSettings)
-                    newEnv = (ApiServerEnvironment)EditorGUILayout.EnumPopup("Use API", serverEnvironment);
-            #endif
             if (serverEnvironment != newEnv)
                 serverEnvironment = newEnv;
 
@@ -522,14 +478,16 @@ public partial class VRCSdkControlPanel : EditorWindow
             delegate (ApiModelContainer<APIUser> c)
             {
                 APIUser user = c.Model as APIUser;
-                if (c.Cookies.ContainsKey("auth"))
+                if (c.Cookies.ContainsKey("twoFactorAuth"))
+                    ApiCredentials.Set(user.username, username, "vrchat", c.Cookies["auth"], c.Cookies["twoFactorAuth"]);
+                else if (c.Cookies.ContainsKey("auth"))
                     ApiCredentials.Set(user.username, username, "vrchat", c.Cookies["auth"]);
                 else
                     ApiCredentials.SetHumanName(user.username);
                 signingIn = false;
                 error = null;
-                storedUsername = username;
-                storedPassword = password;
+                storedUsername = null;
+                storedPassword = null;
                 AnalyticsSDK.LoggedInUserChanged(user);
 
                 if (!APIUser.CurrentUser.canPublishAllContent)
@@ -565,8 +523,7 @@ public partial class VRCSdkControlPanel : EditorWindow
         {
             if (signingIn
                 || APIUser.IsLoggedInWithCredentials
-                || (!explicitAttempt && string.IsNullOrEmpty(storedUsername))
-                || (!explicitAttempt && string.IsNullOrEmpty(storedPassword)))
+                || (!explicitAttempt && string.IsNullOrEmpty(storedUsername)))
                 return;
 
             signingIn = true;

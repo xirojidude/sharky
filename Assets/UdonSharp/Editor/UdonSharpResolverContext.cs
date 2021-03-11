@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 using VRC.Udon.Editor;
 using VRC.Udon.Graph;
@@ -149,7 +150,6 @@ namespace UdonSharp
             { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
             { "_onStationEntered", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationEnteredPlayer") } },
             { "_onStationExited", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationExitedPlayer") } },
-#if UDON_BETA_SDK || true
             { "_onOwnershipRequest", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestRequester"), new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestNewOwner") } },
             { "_onPlayerTriggerEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerEnterPlayer") } },
             { "_onPlayerTriggerExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerExitPlayer") } },
@@ -158,8 +158,19 @@ namespace UdonSharp
             { "_onPlayerCollisionExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionExitPlayer") } },
             { "_onPlayerCollisionStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionStayPlayer") } },
             { "_onPlayerParticleCollision", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerParticleCollisionPlayer") } },
+            { "_onPlayerRespawn", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerRespawnPlayer") } },
             { "_onVideoError", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDK3.Components.Video.VideoError), "onVideoErrorVideoError") } },
-#endif
+            { "_midiNoteOn", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "midiNoteOnChannel"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOnNumber"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOnVelocity") } },
+            { "_midiNoteOff", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "midiNoteOffChannel"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOffNumber"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOffVelocity") } },
+            { "_midiControlChange", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "midiControlChangeChannel"), new System.Tuple<System.Type, string>(typeof(int), "midiControlChangeNumber"), new System.Tuple<System.Type, string>(typeof(int), "midiControlChangeValue") } },
+            { "_inputJump", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(bool), "inputJumpBoolValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputJumpArgs") } },
+            { "_inputUse", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(bool), "inputUseBoolValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputUseArgs") } },
+            { "_inputGrab", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(bool), "inputGrabBoolValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputGrabArgs") } },
+            { "_inputDrop", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(bool), "inputDropBoolValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputDropArgs") } },
+            { "_inputMoveHorizontal", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputMoveHorizontalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputMoveHorizontalArgs") } },
+            { "_inputMoveVertical", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputMoveVerticalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputMoveVerticalArgs") } },
+            { "_inputLookHorizontal", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputLookHorizontalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputLookHorizontalArgs") } },
+            { "_inputLookVertical", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputLookVerticalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputLookVerticalArgs") } },
         };
 
         public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)
@@ -427,18 +438,18 @@ namespace UdonSharp
             }
 
             string paramStr = "";
-
+            
             if (methodParams.Length > 0)
             {
-                paramStr += "_"; // Arg separator
-
+                paramStr = "_"; // Arg separator
+            
                 foreach (ParameterInfo parameterInfo in methodParams)
                 {
                     paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType, true)}";
                 }
             }
             else if (externMethod is ConstructorInfo)
-                paramStr += "__";
+                paramStr = "__";
 
             string returnStr = "";
 

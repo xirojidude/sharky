@@ -46,6 +46,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
             "For",
             "Foreach",
             "While",
+            "Is_Valid",
         };
 
         // Upgrade note - persistenceKey turns into viewDataKey in Unity 2019, this getter will make that transition easier
@@ -170,7 +171,8 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                     }
                     else
                     {
-                        Debug.Log($"Couldn't find classname for {nodeDefinition.fullName}");
+                        //TODO: handle class names not found
+                        //Debug.Log($"Couldn't find classname for {nodeDefinition.fullName}");
                     }
                 }   
             }
@@ -372,6 +374,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 if (connectedNode == null)
                 {
                     Debug.Log($"Couldn't find node with GUID {nodeUID}");
+                    continue;
                 }
                 
                 // Trying to move a Block's flow that was left at the end to the beginning

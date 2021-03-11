@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using UnityEngine;
 using UnityEditor.Experimental.UIElements.GraphView;
@@ -170,8 +170,10 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
             value = value.TrimEnd();
             _customData.title = value;
             _label.text = value;
-            _graph.SaveNewData();
-            MarkDirtyRepaint();
+            if (!_graph.IsReloading)
+            {
+                _graph.SaveNewData();
+            }
         }
         
         public UdonGraphElementData GetData()

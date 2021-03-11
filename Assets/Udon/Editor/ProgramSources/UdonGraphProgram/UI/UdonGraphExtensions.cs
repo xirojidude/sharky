@@ -157,6 +157,9 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI
                 "Event_OnVideoPause",
                 "Event_OnVideoPlay",
                 "Event_OnVideoStart",
+                "Event_MidiNoteOn",
+                "Event_MidiNoteOff",
+                "Event_MidiControlChange",
                 "VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid",
                 "VRCUdonCommonInterfacesIUdonEventReceiver.__SetHeapVariable__SystemString_SystemObject__SystemVoid",
                 "VRCUdonCommonInterfacesIUdonEventReceiver.__GetHeapVariable__SystemString__SystemObject",
@@ -310,12 +313,18 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI
             typeString = typeString.Replace("UdonCommonInterfacesIUdonEventReceiver", "UdonBehaviour");
             typeString = typeString.Replace("IUdonEventReceiver", "UdonBehaviour");
             typeString = typeString.Replace("Const_VRCUdonCommonInterfacesIUdonEventReceiver", "UdonBehaviour");
-            typeString = typeString.Replace("Array", "[]");
+            if(typeString != "SystemArray")
+            {
+                typeString = typeString.Replace("Array", "[]");
+            }
+
             typeString = typeString.Replace("SDK3VideoComponentsBaseBase", "");
             typeString = typeString.Replace("SDKBase", "");
             typeString = typeString.Replace("SDK3Components", "");
             typeString = typeString.Replace("VRCVRC", "VRC");
             typeString = typeString.Replace("TMPro", "");
+            typeString = typeString.Replace("VideoVideo", "Video");
+            typeString = typeString.Replace("VRCUdonCommon", "");
             // ReSharper disable once StringLiteralTypo
             if (typeString.Replace("ector", "").Contains("ctor")) //Handle "Vector/vector"
             {

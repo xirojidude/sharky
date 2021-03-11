@@ -16,7 +16,7 @@ public class FallbackMaterialCache
         }
         else
         {
-            Debug.LogError(string.Format("Attempted to add a duplicate fallback material '{0}' for original material '{1}'.", fallbackMaterial.name, material.name));
+            Debug.LogError($"Attempted to add a duplicate fallback material '{fallbackMaterial.name}' for original material '{material.name}'.");
         }
     }
 
@@ -25,9 +25,20 @@ public class FallbackMaterialCache
         return _fallbackMaterialCache.ContainsKey(material);
     }
 
-    public Material GetFallBackMaterial(Material material)
+    public Material GetFallbackMaterial(Material material)
     {
         return _fallbackMaterialCache[material];
+    }
+
+    public bool TryGetFallbackMaterial(Material material, out Material fallbackMaterial)
+    {
+        if(material != null)
+        {
+            return _fallbackMaterialCache.TryGetValue(material, out fallbackMaterial);
+        }
+
+        fallbackMaterial = null;
+        return false;
     }
 
     public void Clear()

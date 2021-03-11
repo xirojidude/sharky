@@ -5,9 +5,8 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using VRCSDK2.Validation.Performance;
+using VRC.SDKBase.Validation.Performance;
 using Object = UnityEngine.Object;
-using VRC.SDK3.Editor;
 using VRC.SDKBase.Editor;
 
 public partial class VRCSdkControlPanel : EditorWindow
@@ -169,7 +168,7 @@ public partial class VRCSdkControlPanel : EditorWindow
             VRCSdkControlPanelBuilderAttribute[] sdkBuilderAttributes;
             try
             {
-                sdkBuilderAttributes = (VRCSdkControlPanelBuilderAttribute[])assembly.GetCustomAttributes(sdkBuilderAttributeType, false);
+                sdkBuilderAttributes = (VRCSdkControlPanelBuilderAttribute[])assembly.GetCustomAttributes(sdkBuilderAttributeType, true);
             }
             catch
             {

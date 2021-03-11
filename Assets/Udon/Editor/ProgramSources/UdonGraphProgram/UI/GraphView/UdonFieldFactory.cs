@@ -33,9 +33,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI
 			AddDrawer(typeof(Vector3), typeof(Vector3Field));
 			AddDrawer(typeof(Vector3Int), typeof(Vector3IntField));
 			AddDrawer(typeof(Vector4), typeof(Vector4Field));
-			AddDrawer(typeof(AnimationCurve), typeof(CurveField));
 			AddDrawer(typeof(Enum), typeof(EnumField));
-			AddDrawer(typeof(Gradient), typeof(GradientField));
 			AddDrawer(typeof(UnityEngine.Object), typeof(ObjectField));
 			AddDrawer(typeof(Rect), typeof(RectField));
 			AddDrawer(typeof(RectInt), typeof(RectIntField));

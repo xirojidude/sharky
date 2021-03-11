@@ -56,7 +56,12 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
 
         internal void AddEntries(List<SearchTreeEntry> cache, IEnumerable<UdonNodeDefinition> definitions, int level, bool stripToLastDot = false)
         {
-            Texture2D icon = EditorGUIUtility.FindTexture("cs Script Icon");
+            Texture2D icon = AssetPreview.GetMiniTypeThumbnail(typeof(GameObject));
+            Texture2D iconGetComponents = EditorGUIUtility.FindTexture("d_ViewToolZoom");
+            Texture2D iconOther = new Texture2D(1, 1);
+            iconOther.SetPixel(0,0, new Color(0,0,0,0));
+            iconOther.Apply();
+            
             Dictionary<string, UdonNodeDefinition> baseNodeDefinition = new Dictionary<string, UdonNodeDefinition>();
 
             foreach (UdonNodeDefinition nodeDefinition in definitions.OrderBy(s => UdonGraphExtensions.PrettyFullName(s)))
@@ -74,6 +79,9 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 baseNodeDefinition.Add(baseIdentifier, nodeDefinition);
             }
 
+            var nodesOfGetComponentType = new List<SearchTreeEntry>();
+            var nodesOfOtherType = new List<SearchTreeEntry>();
+            
             // add all subTypes
             foreach (KeyValuePair<string, UdonNodeDefinition> nodeDefinitionsEntry in baseNodeDefinition)
             {
@@ -85,7 +93,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                     int lastDotIndex = nodeName.LastIndexOf('.');
                     nodeName = nodeName.Substring(lastDotIndex + 1);
                 }
-
+                
                 // don't add Variable or Comment nodes
                 if (nodeName.StartsWithCached("Variable") || nodeName.StartsWithCached("Get Var") || nodeName.StartsWithCached("Set Var") || nodeName.StartsWithCached("Comment"))
                 {
@@ -95,9 +103,63 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 {
                     nodeName = $"{nodeDefinitionsEntry.Value.type.Namespace}.{nodeName}";
                 }
+                if (nodeNamesGetComponentType.Contains(nodeName))
+                {
+                    nodesOfGetComponentType.Add(new SearchTreeEntry(new GUIContent(nodeName, iconGetComponents)) { level = level+1, userData = nodeDefinitionsEntry.Value });
+                    continue;
+                }
+                
+                // Only put 'Equals' in the 'Other' category if this definition is not an Enum
+                if (nodeNamesOtherType.Contains(nodeName) || nodeName == "Equals" && !nodeDefinitionsEntry.Value.type.IsEnum)
+                {
+                    nodesOfOtherType.Add(new SearchTreeEntry(new GUIContent(nodeName, iconOther)) { level = level+1, userData = nodeDefinitionsEntry.Value });
+                    continue;
+                }
+
                 cache.Add(new SearchTreeEntry(new GUIContent(nodeName, icon)) { level = level, userData = nodeDefinitionsEntry.Value });
             }
+            
+            // add getComponents level
+            if (nodesOfGetComponentType.Count > 0)
+            {
+                cache.Add(new SearchTreeGroupEntry(new GUIContent("GetComponents"), level));
+                foreach (var entry in nodesOfGetComponentType)
+                {
+                    cache.Add(entry);
+                }   
+            }
+
+            // add other level
+            if (nodesOfOtherType.Count > 0)
+            {
+                cache.Add(new SearchTreeGroupEntry(new GUIContent("Other"), level));
+                foreach (var entry in nodesOfOtherType)
+                {
+                    cache.Add(entry);
+                }   
+            }
         }
+
+        private static HashSet<string> nodeNamesGetComponentType = new HashSet<string>()
+        {
+            "GetComponent",
+            "GetComponentInChildren",
+            "GetComponentInParent",
+            "GetComponents",
+            "GetComponentsInChildren",
+            "GetComponentsInParent",
+        };
+        
+        private static HashSet<string> nodeNamesOtherType = new HashSet<string>()
+        {
+            "Equality",
+            "GetHashCode",
+            "GetInstanceID",
+            "GetType",
+            "Implicit",
+            "Inequality",
+            "Tostring",
+        };
 
         // adds all entries so we can use this for regular and array registries
         internal void AddEntriesForRegistry(List<SearchTreeEntry> cache, INodeRegistry registry, int level, bool stripToLastDot = false)

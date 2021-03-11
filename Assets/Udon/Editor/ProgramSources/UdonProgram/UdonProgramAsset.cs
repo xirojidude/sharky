@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -113,6 +114,37 @@ namespace VRC.Udon.Editor.ProgramSources
         }
 
         [PublicAPI]
+        protected void DrawInteractionArea(UdonBehaviour udonBehaviour)
+        {
+            ImmutableArray<string> exportedSymbols = program.EntryPoints.GetExportedSymbols();
+            if (exportedSymbols.Contains("_interact"))
+            {
+                EditorGUILayout.LabelField("Interaction", EditorStyles.boldLabel);
+                EditorGUI.indentLevel++;
+
+                if(udonBehaviour != null)
+                {
+                    udonBehaviour.interactText = EditorGUILayout.TextField("Interaction Text", udonBehaviour.interactText);
+                    udonBehaviour.proximity = EditorGUILayout.Slider("Proximity", udonBehaviour.proximity, 0f, 100f);
+                    udonBehaviour.interactTextPlacement = (Transform)EditorGUILayout.ObjectField("Text Placement", udonBehaviour.interactTextPlacement, typeof(Transform), true);
+                }
+                else
+                {
+                    using(new EditorGUI.DisabledScope(true))
+                    {
+                        EditorGUILayout.TextField("Interaction Text", "Use");
+                        EditorGUILayout.Slider("Proximity", 2.0f, 0f, 100f);
+                        EditorGUILayout.ObjectField("Text Placement", null, typeof(Transform), true);
+                    }
+                }
+                
+                
+                
+                EditorGUI.indentLevel--;
+            }
+        }
+
+        [PublicAPI]
         protected void DrawPublicVariables(UdonBehaviour udonBehaviour, ref bool dirty)
         {
             IUdonVariableTable publicVariables = null;
@@ -131,20 +163,19 @@ namespace VRC.Udon.Editor.ProgramSources
             }
 
             IUdonSymbolTable symbolTable = program.SymbolTable;
-            string[] exportedSymbolNames = symbolTable.GetExportedSymbols();
-
             // Remove non-exported public variables
             if(publicVariables != null)
             {
                 foreach(string publicVariableSymbol in publicVariables.VariableSymbols.ToArray())
                 {
-                    if(!exportedSymbolNames.Contains(publicVariableSymbol))
+                    if(!symbolTable.HasExportedSymbol(publicVariableSymbol))
                     {
                         publicVariables.RemoveVariable(publicVariableSymbol);
                     }
                 }
             }
 
+            ImmutableArray<string> exportedSymbolNames = symbolTable.GetExportedSymbols();
             if(exportedSymbolNames.Length <= 0)
             {
                 EditorGUILayout.LabelField("No public variables.");
@@ -775,6 +806,132 @@ namespace VRC.Udon.Editor.ProgramSources
                         dirty = true;
                     }
                 }
+                else if(variableType == typeof(Gradient))
+                {
+                    Gradient color2Value = variableValue as Gradient;
+                    if (color2Value == null) color2Value = new Gradient();
+                    EditorGUI.BeginChangeCheck();
+                    variableValue = EditorGUILayout.GradientField(symbol, color2Value);
+                    if(EditorGUI.EndChangeCheck())
+                    {
+                        dirty = true;
+                    }
+                }
+                else if(variableType == typeof(Gradient[]))
+                {
+                    Gradient[] valueArray = (Gradient[])variableValue;
+                    GUI.SetNextControlName("NodeField");
+                    bool showArray = false;
+                    if(_arrayStates.ContainsKey(symbol))
+                    {
+                        showArray = _arrayStates[symbol];
+                    }
+                    else
+                    {
+                        _arrayStates.Add(symbol, false);
+                    }
+                    EditorGUILayout.BeginVertical();
+
+                    EditorGUI.BeginChangeCheck();
+                    // Show Foldout Header
+                    showArray = EditorGUILayout.Foldout(showArray, symbol, true);
+                    // Save foldout state
+                    _arrayStates[symbol] = showArray;
+                    
+                    if(showArray)
+                    {
+                        EditorGUI.indentLevel++;
+                        int newSize = EditorGUILayout.IntField(
+                            "size:",
+                            valueArray != null && valueArray.Length > 0 ? valueArray.Length : 1
+                        );
+                        EditorGUILayout.Space();
+                        newSize = newSize >= 0 ? newSize : 0;
+                        Array.Resize(ref valueArray, newSize);
+                        
+                        if(valueArray != null && valueArray.Length > 0)
+                        {
+                            for(int i = 0; i < valueArray.Length; i++)
+                            {
+                                GUI.SetNextControlName("NodeField");
+                                Gradient g = valueArray.Length > i ? (valueArray[i]) : new Gradient();
+                                if (g == null) g = new Gradient();
+                                valueArray[i] = EditorGUILayout.GradientField($"{i}:", g);
+                            }
+                        }
+
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.EndVertical();
+                    if(EditorGUI.EndChangeCheck())
+                    {
+                        variableValue = valueArray;
+                        dirty = true;
+                    }
+                }
+                else if(variableType == typeof(AnimationCurve))
+                {
+                    AnimationCurve curve2Value = variableValue as AnimationCurve;
+                    if (curve2Value == null) curve2Value = new AnimationCurve();
+                    EditorGUI.BeginChangeCheck();
+                    variableValue = EditorGUILayout.CurveField(symbol, curve2Value);
+                    if(EditorGUI.EndChangeCheck())
+                    {
+                        dirty = true;
+                    }
+                }
+                else if(variableType == typeof(AnimationCurve[]))
+                {
+                    AnimationCurve[] valueArray = (AnimationCurve[])variableValue;
+                    GUI.SetNextControlName("NodeField");
+                    bool showArray = false;
+                    if(_arrayStates.ContainsKey(symbol))
+                    {
+                        showArray = _arrayStates[symbol];
+                    }
+                    else
+                    {
+                        _arrayStates.Add(symbol, false);
+                    }
+                    EditorGUILayout.BeginVertical();
+
+                    EditorGUI.BeginChangeCheck();
+                    // Show Foldout Header
+                    showArray = EditorGUILayout.Foldout(showArray, symbol, true);
+                    // Save foldout state
+                    _arrayStates[symbol] = showArray;
+                    
+                    if(showArray)
+                    {
+                        EditorGUI.indentLevel++;
+                        int newSize = EditorGUILayout.IntField(
+                            "size:",
+                            valueArray != null && valueArray.Length > 0 ? valueArray.Length : 1
+                        );
+                        EditorGUILayout.Space();
+                        newSize = newSize >= 0 ? newSize : 0;
+                        Array.Resize(ref valueArray, newSize);
+                        
+                        if(valueArray != null && valueArray.Length > 0)
+                        {
+                            for(int i = 0; i < valueArray.Length; i++)
+                            {
+                                GUI.SetNextControlName("NodeField");
+                                AnimationCurve curve = valueArray.Length > i ? (valueArray[i]) : new AnimationCurve();
+                                if (curve == null) curve = new AnimationCurve();
+                                valueArray[i] = EditorGUILayout.CurveField($"{i}:", curve);
+                            }
+                        }
+
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.EndVertical();
+                    if(EditorGUI.EndChangeCheck())
+                    {
+                        variableValue = valueArray;
+                        dirty = true;
+                    }
+                }
                 else if(variableType == typeof(UnityEngine.Color))
                 {
                     Color color2Value = (Color?)variableValue ?? default;
@@ -1107,6 +1264,20 @@ namespace VRC.Udon.Editor.ProgramSources
 
                         variableValue = destinationArray;
 
+                        dirty = true;
+                    }
+                }
+                else if (variableType == typeof(VRC.SDKBase.VRCUrl))
+                {
+                    if(variableValue == null)
+                        variableValue = new VRC.SDKBase.VRCUrl("");
+
+                    VRC.SDKBase.VRCUrl url = (VRC.SDKBase.VRCUrl)variableValue;
+                    EditorGUI.BeginChangeCheck();
+                    variableValue = new VRC.SDKBase.VRCUrl(EditorGUILayout.TextField(symbol, url.Get()));
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
                         dirty = true;
                     }
                 }

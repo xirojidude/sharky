@@ -23,7 +23,7 @@ namespace VRC.Udon.Editor
         {
             _programSourceProperty = serializedObject.FindProperty("programSource");
             _serializedProgramAssetProperty = serializedObject.FindProperty("serializedProgramAsset");
-            _newProgramType = EditorPrefs.GetInt(VRC_UDON_NEW_PROGRAM_TYPE_PREF_KEY);
+            _newProgramType = EditorPrefs.GetInt(VRC_UDON_NEW_PROGRAM_TYPE_PREF_KEY, 1);
 
             UdonEditorManager.Instance.WantRepaint += Repaint;
         }

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: ButtonSyncAnyone
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 45ac1d1b418a95b4bb527dbe49432d35,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 0532df858a5341849a4d51b8d812bca6,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export uiText\r\n    .export clickCount\r\n
     \   .sync clickCount, none\r\n    \r\n    Boolean_0: %SystemBoolean, null\r\n
@@ -25,15 +25,13 @@ MonoBehaviour:
     \   uiText: %UnityEngineUIText, null\r\n    clickCount: %SystemInt32, null\r\n\r\n.data_end\r\n\r\n.code_start\r\n\r\n
     \   .export OnClick\r\n    \r\n    OnClick:\r\n    \r\n        PUSH, obj_0\r\n
     \       PUSH, Boolean_0\r\n        EXTERN, \"VRCSDKBaseNetworking.__IsOwner__UnityEngineGameObject__SystemBoolean\"\r\n
-    \       PUSH, Boolean_0\r\n        JUMP_IF_FALSE, 0x000000BC\r\n        PUSH,
-    clickCount\r\n        PUSH, Int32_1\r\n        PUSH, clickCount\r\n        EXTERN,
-    \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n        PUSH,
-    clickCount\r\n        PUSH, clickCount\r\n        COPY\r\n        PUSH, uiText\r\n
-    \       PUSH, instance_0\r\n        COPY\r\n        PUSH, clickCount\r\n        PUSH,
-    instance_1\r\n        COPY\r\n        PUSH, clickCount\r\n        PUSH, value_0\r\n
-    \       EXTERN, \"SystemInt32.__ToString__SystemString\"\r\n        PUSH, instance_0\r\n
-    \       PUSH, value_0\r\n        EXTERN, \"UnityEngineUIText.__set_text__SystemString__SystemVoid\"\r\n
-    \       JUMP, 0x000000DC\r\n        PUSH, instance_2\r\n        PUSH, target_0\r\n
+    \       PUSH, Boolean_0\r\n        JUMP_IF_FALSE, 0x0000A8\r\n        PUSH, clickCount\r\n
+    \       PUSH, Int32_1\r\n        PUSH, clickCount\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
+    \       PUSH, uiText\r\n        PUSH, instance_0\r\n        COPY\r\n        PUSH,
+    clickCount\r\n        PUSH, instance_1\r\n        COPY\r\n        PUSH, clickCount\r\n
+    \       PUSH, value_0\r\n        EXTERN, \"SystemInt32.__ToString__SystemString\"\r\n
+    \       PUSH, instance_0\r\n        PUSH, value_0\r\n        EXTERN, \"UnityEngineUIText.__set_text__SystemString__SystemVoid\"\r\n
+    \       JUMP, 0x0000C8\r\n        PUSH, instance_2\r\n        PUSH, target_0\r\n
     \       PUSH, eventName_0\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomNetworkEvent__VRCUdonCommonInterfacesNetworkEventTarget_SystemString__SystemVoid\"\r\n
     \       JUMP, 0xFFFFFFFC\r\n    \r\n    .export _onDeserialization\r\n    \r\n
     \   _onDeserialization:\r\n    \r\n        PUSH, uiText\r\n        PUSH, instance_3\r\n
@@ -251,8 +249,4 @@ MonoBehaviour:
     jsonData: '{"uid":"17943850-08e1-4add-a49b-8f2dae086d5a","layout":{"serializedVersion":"2","x":436.27691650390627,"y":-440.4211120605469,"width":423.05670166015627,"height":117.41699981689453},"title":"The
       only difference in this graph vs ButtonSyncOwner is this one uses Send Custom
       Network Event to send the ''OnClick'' event from any user to the Owner.","layer":0,"elementTypeColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
-  viewTransform:
-    position: {x: 0, y: 0}
-    scale: 1
-  version: 1.0.0
   showAssembly: 1

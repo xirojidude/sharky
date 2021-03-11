@@ -8,7 +8,6 @@ using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Security.Interfaces;
 using VRC.Udon.Wrapper.Modules;
 
-
 [assembly: UdonWrapperModule(typeof(ExternVRCInstantiate))]
 
 namespace VRC.Udon.Wrapper.Modules
@@ -17,15 +16,15 @@ namespace VRC.Udon.Wrapper.Modules
     {
         public string Name => "VRCInstantiate";
 
-        private readonly IUdonSecurityBlacklist _blacklist;
-
         private readonly Dictionary<string, int> _parameterCounts;
         private readonly Dictionary<string, UdonExternDelegate> _functionDelegates;
+        private readonly IUdonSecurityBlacklist _blacklist;
 
+        //Passing unused parameter for consistent construction
+        // ReSharper disable once UnusedParameter.Local
         public ExternVRCInstantiate(IUdonComponentGetter componentGetter, IUdonSecurityBlacklist blacklist)
         {
             _blacklist = blacklist;
-
             _parameterCounts = new Dictionary<string, int>
             {
                 {"__Instantiate__UnityEngineGameObject__UnityEngineGameObject", 2},
@@ -68,7 +67,6 @@ namespace VRC.Udon.Wrapper.Modules
             foreach(UdonBehaviour udonBehaviour in clone.GetComponentsInChildren<UdonBehaviour>())
             {
                 UdonManager.Instance.RegisterUdonBehaviour(udonBehaviour);
-                udonBehaviour.InitializeUdonContent();
             }
 
             heap.SetHeapVariable(parameterAddresses[1], clone);

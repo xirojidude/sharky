@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: PlayerCollisionParticles
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 155430b4a6925124392faeefa6f125d4,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: b0c9bfa071c58dd46bc312fc0955290b,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export textField\r\n    \r\n    instance_0:
     %UnityEngineUIText, null\r\n    value_0: %SystemString, null\r\n    format_0:
@@ -116,13 +116,13 @@ MonoBehaviour:
       nodeValues: []
   graphElementData:
   - type: 5
-    uid: 588b5099-9350-41f0-9447-c5232baf7b6a
+    uid: 4b8d8270-2843-4eba-a790-535f6ebc72af
     jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":130.0,"width":200.0,"height":150.0}}'
   - type: 4
-    uid: 048b771c-a3dc-41f0-b7c0-45da72f4a95f
-    jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":21.0,"y":17.0,"width":200.0,"height":100.0}}'
+    uid: 06df1696-996e-4929-84eb-dcbed8852eec
+    jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":20.0,"width":0.0,"height":0.0}}'
   viewTransform:
-    position: {x: -160.73438, y: -447.4204}
-    scale: 1.520875
+    position: {x: -198.89558, y: 110.77393}
+    scale: 0.8695652
   version: 1.0.0
   showAssembly: 0

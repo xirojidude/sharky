@@ -56,6 +56,31 @@ namespace UdonSharp.Compiler
             Visit(node.Expression);
         }
 
+        public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
+        {
+            UpdateSyntaxNode(node);
+            Visit(node.Type);
+        }
+
+        public override void VisitEmptyStatement(EmptyStatementSyntax node)
+        {
+            UpdateSyntaxNode(node);
+        }
+
+        public override void VisitNullableType(NullableTypeSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotImplementedException("Nullable types are not currently supported by UdonSharp");
+        }
+
+        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not yet support user defined enums");
+        }
+
         public override void VisitTypeOfExpression(TypeOfExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -242,10 +267,10 @@ namespace UdonSharp.Compiler
             using (ExpressionCaptureScope namespaceCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 if (node.StaticKeyword.IsKind(SyntaxKind.StaticKeyword))
-                    throw new System.NotSupportedException("UdonSharp does not yet support static using statements");
+                    throw new System.NotSupportedException("UdonSharp does not yet support static using directives");
 
-                if (node.Alias.IsKind(SyntaxKind.AliasKeyword))
-                    throw new System.NotSupportedException("UdonSharp does not yet support namespace aliases");
+                if (node.Alias != null)
+                    throw new System.NotSupportedException("UdonSharp does not yet support namespace alias directives");
 
                 Visit(node.Name);
 

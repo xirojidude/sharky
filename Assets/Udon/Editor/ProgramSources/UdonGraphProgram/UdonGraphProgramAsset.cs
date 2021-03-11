@@ -43,6 +43,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram
                 w.InitializeGraph(this, udonBehaviour);
             }
 
+            DrawInteractionArea(udonBehaviour);
             DrawPublicVariables(udonBehaviour, ref dirty);
             DrawAssemblyErrorTextArea();
             DrawAssemblyTextArea(false, ref dirty);

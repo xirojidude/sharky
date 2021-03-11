@@ -59,6 +59,7 @@ namespace VRCPrefabs.CyanEmu
 
         private Stance stance_;
         private bool isDead_;
+        private bool isImmobile_;
         private bool isWalking_;
 
         private float walkSpeed_ = DEFAULT_WALK_SPEED_;
@@ -234,6 +235,9 @@ namespace VRCPrefabs.CyanEmu
                 PostProcessLayer refPostProcessLayer = refCamera.GetComponent<PostProcessLayer>();
                 if (refPostProcessLayer != null)
                 {
+#if UNITY_ANDROID
+                    instance.LogWarning("Post processing is not supported on Android");
+#else
                     PostProcessLayer postProcessLayer = camera.gameObject.AddComponent<PostProcessLayer>();
                     postProcessLayer.volumeLayer = refPostProcessLayer.volumeLayer;
 
@@ -248,6 +252,7 @@ namespace VRCPrefabs.CyanEmu
                     FieldInfo resourcesInfo = typeof(PostProcessLayer).GetField("m_Resources", BindingFlags.NonPublic | BindingFlags.Instance);
                     PostProcessResources postProcessResources = resourcesInfo.GetValue(refPostProcessLayer) as PostProcessResources;
                     postProcessLayer.Init(postProcessResources);
+#endif
                 }
 #endif
                 refCamera.gameObject.SetActive(false);
@@ -373,6 +378,7 @@ namespace VRCPrefabs.CyanEmu
 
         public Vector3 GetVelocity()
         {
+            // TODO fix value
             return characterController_.velocity;
         }
         
@@ -555,6 +561,11 @@ namespace VRCPrefabs.CyanEmu
             isDead_ = false;
         }
 
+        public void Immobilize(bool immobilize)
+        {
+            isImmobile_ = immobilize;
+        }
+
         private void Update()
         {
             RotateView();
@@ -592,6 +603,12 @@ namespace VRCPrefabs.CyanEmu
             {
                 input = Vector2.zero;
                 jump_ = false;
+            }
+
+            // Immobile does not affect Jump
+            if (isImmobile_)
+            {
+                input = Vector2.zero;
             }
 
             // always move along the camera forward as it is the direction that it being aimed at

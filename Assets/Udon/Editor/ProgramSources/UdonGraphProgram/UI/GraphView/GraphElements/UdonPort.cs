@@ -66,18 +66,20 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 return;
             }
 
-            var value = TryGetValueObject(out object result);
-            var field = UdonFieldFactory.CreateField(
-                portType,
-                result,
-                newValue => SetNewValue(newValue)
-            );
-            
-            if(field != null)
+            if (TryGetValueObject(out object result, portType))
             {
-                SetupField(field);
-            }
+                var field = UdonFieldFactory.CreateField(
+                    portType,
+                    result,
+                    newValue => SetNewValue(newValue)
+                );
             
+                if(field != null)
+                {
+                    SetupField(field);
+                }
+            }
+
             if (_udonNodeData.fullName.StartsWith("Const"))
             {
                 RemoveConnector();
@@ -359,60 +361,39 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
             }
         }
 
-        private bool TryGetValueObject(out object result)
+        private bool TryGetValueObject(out object result, Type type = null)
         {
+            // Initialize out object
             result = null;
-            SerializableObjectContainer container = null;
-            // For Get and Set variable nodes, reach into the actual value of the linked variable
-            if (_udonNodeData.fullName.Contains("et_Variable"))
-            {
-                string targetVariableUid = (string)_udonNodeData.nodeValues[0].Deserialize();
-                if (targetVariableUid == null) return false;
-                
-                var data = _udonNodeData.GetGraph().FindNode(targetVariableUid);
-                if (data == null) return false;
-                
-                container = data.nodeValues[0];
-            }
-            else
-            {
-                container = _udonNodeData.nodeValues[_nodeValueIndex];
-            }
-           
+
+            // get container from node values
+            SerializableObjectContainer container = _udonNodeData.nodeValues[_nodeValueIndex];
+            
+            // Null check, failure
             if (container == null)
-            {
                 return false;
-            }
-
+            
+            // Deserialize into result, return failure on null
             result = container.Deserialize();
-            if(result == null)
+
+            // Strings will deserialize as null, that's ok
+            if (type == null || type == typeof(string))
             {
-                return false;
+                return true;
+            }
+            // any other type is not ok to be null
+            else if (result == null)
+            {
+                return false;   
             }
 
-            return true;
+            // Success - return true
+            return type.IsInstanceOfType(result);
         }
 
         private void SetNewValue(object newValue)
         {
-            var container = SerializableObjectContainer.Serialize(newValue, portType);
-            
-            if (_udonNodeData.fullName.Contains("Set_Variable"))
-            {
-                // Variables need to be traced back to their actual data points
-                string targetVariableUid = (string)_udonNodeData.nodeValues[0].Deserialize();
-                if (targetVariableUid == null) return;
-                
-                var data = _udonNodeData.GetGraph().FindNode(targetVariableUid);
-                if (data == null) return;
-                
-                data.nodeValues[0] = container;
-            }
-            else
-            {
-                // regular value setting
-                _udonNodeData.nodeValues[_nodeValueIndex] = container;   
-            }
+            _udonNodeData.nodeValues[_nodeValueIndex] = SerializableObjectContainer.Serialize(newValue, portType);   
             
             if (!_waitToReserialize)
             {

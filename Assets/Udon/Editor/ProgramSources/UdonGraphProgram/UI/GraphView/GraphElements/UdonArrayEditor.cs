@@ -35,7 +35,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 Type typedArrayInspector = (typeof(UdonArrayInspector<>)).MakeGenericType(_type);
                 _inspector = (Activator.CreateInstance(typedArrayInspector, null, _value) as IArrayProvider);
 
-                Add(_inspector as VisualElement);
+                AddInspector();
                 _inspectorOpen = true;
                 _editArrayButton.text = "Save";
                 return;
@@ -61,13 +61,22 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 {
                     // Inspector exists, it's just removed
                     _inspectorOpen = true;
-                    Add(_inspector as VisualElement);
+                    AddInspector();
                     _editArrayButton.text = "Save";
                 }
             }
-
-
-
+        }
+        
+        private void AddInspector()
+        {
+            if (parent.GetType() == typeof(UdonPort))
+            {
+                parent.parent.Add(_inspector as VisualElement);
+            }
+            else
+            {
+                Add(_inspector as VisualElement);   
+            }
         }
     }
 }

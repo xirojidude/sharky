@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Reflection;
 
-namespace VRCSDK2.Validation
+namespace VRC.SDKBase.Validation
 {
     public static class ValidationUtils
     {

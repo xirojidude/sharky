@@ -21,6 +21,11 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
             ("VRC", "UdonCommonInterfacesIUdonEventReceiver")
         };
 
+        private HashSet<string> _hiddenRegistries = new HashSet<string>()
+        {
+            "Utilities",
+        };
+
         public void Initialize(UdonGraphWindow editorWindow, UdonGraph graphView, UdonSearchManager manager)
         {
             base.Initialize(editorWindow, graphView);
@@ -98,7 +103,7 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 {
                     string baseRegistryName = registry.Key.Replace("NodeRegistry", "").FriendlyNameify().ReplaceFirst(topName, "");
                     string registryName = baseRegistryName.UppercaseFirst();
-
+                    
                     // Plural-ize Event->Events and Type->Types
                     if (topName == "Udon" && (registryName == "Event" || registryName == "Type"))
                     {
@@ -111,6 +116,13 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                         {
                             registryName = $"{topName}.{registryName}";
                         }
+
+                        // skip certain registries
+                        if (_hiddenRegistries.Contains(registryName))
+                        {
+                            continue;
+                        }
+                        
                         _registryCache.Add(new SearchTreeEntry(new GUIContent(registryName, icon, $"{topName}.{registryName}")) { level = 2, userData = registry.Value });
                     }
                 }

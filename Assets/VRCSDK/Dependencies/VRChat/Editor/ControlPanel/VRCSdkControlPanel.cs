@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using VRC.Core;
+using VRC.SDKBase.Editor;
 
 [ExecuteInEditMode]
 public partial class VRCSdkControlPanel : EditorWindow
@@ -183,15 +184,8 @@ public partial class VRCSdkControlPanel : EditorWindow
 
         EnvConfig.SetActiveSDKDefines();
 
-        #if VRC_SDK_VRCSDK2
-            VRCSettings.Get().activeWindowPanel = GUILayout.Toolbar(VRCSettings.Get().activeWindowPanel, new string[] { "Authentication", "Builder", "Content Manager", "Settings" }, GUILayout.Width(SdkWindowWidth));
-            int showPanel = VRCSettings.Get().activeWindowPanel;
-        #elif VRC_SDK_VRCSDK3
-            VRC.SDK3.Editor.VRCSettings.Get().activeWindowPanel = GUILayout.Toolbar(VRC.SDK3.Editor.VRCSettings.Get().activeWindowPanel, new string[] { "Authentication", "Builder", "Content Manager", "Settings" }, GUILayout.Width(SdkWindowWidth));
-            int showPanel = VRC.SDK3.Editor.VRCSettings.Get().activeWindowPanel;
-        #else
-            int showPanel = 0;
-        #endif
+            VRCSettings.ActiveWindowPanel = GUILayout.Toolbar(VRCSettings.ActiveWindowPanel, new string[] { "Authentication", "Builder", "Content Manager", "Settings" }, GUILayout.Width(SdkWindowWidth));
+            int showPanel = VRCSettings.ActiveWindowPanel;
 
         GUILayout.EndVertical();
         GUILayout.FlexibleSpace();

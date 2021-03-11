@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VRCSDK2.Validation.Performance.Stats
+namespace VRC.SDKBase.Validation.Performance.Stats
 {
     public class AvatarPerformanceStats
     {

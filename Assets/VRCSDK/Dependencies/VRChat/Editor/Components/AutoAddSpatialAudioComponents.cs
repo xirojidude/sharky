@@ -83,9 +83,9 @@ public class AutoAddSpatialAudioComponents
         {
             bool isAvatar = audioSrc.GetComponentInParent<VRC.SDKBase.VRC_AvatarDescriptor>();
 
-            vrcsp.Gain = isAvatar ? VRCSDK2.AudioManagerSettings.AvatarAudioMaxGain : VRCSDK2.AudioManagerSettings.RoomAudioGain;
+            vrcsp.Gain = isAvatar ? AudioManagerSettings.AvatarAudioMaxGain : AudioManagerSettings.RoomAudioGain;
             vrcsp.Near = 0;
-            vrcsp.Far = isAvatar ? VRCSDK2.AudioManagerSettings.AvatarAudioMaxRange : VRCSDK2.AudioManagerSettings.RoomAudioMaxRange;
+            vrcsp.Far = isAvatar ? AudioManagerSettings.AvatarAudioMaxRange : AudioManagerSettings.RoomAudioMaxRange;
             vrcsp.UseAudioSourceVolumeCurve = false;
         }
 
@@ -203,9 +203,9 @@ public class AutoAddSpatialAudioComponents
         // add default values
         bool isAvatar = src.gameObject.GetComponentInParent<VRC.SDKBase.VRC_AvatarDescriptor>();
 
-        vrcsp.Gain = isAvatar ? VRCSDK2.AudioManagerSettings.AvatarAudioMaxGain : VRCSDK2.AudioManagerSettings.RoomAudioGain;
+        vrcsp.Gain = isAvatar ? AudioManagerSettings.AvatarAudioMaxGain : AudioManagerSettings.RoomAudioGain;
         vrcsp.Near = 0;
-        vrcsp.Far = isAvatar ? VRCSDK2.AudioManagerSettings.AvatarAudioMaxRange : VRCSDK2.AudioManagerSettings.RoomAudioMaxRange;
+        vrcsp.Far = isAvatar ? AudioManagerSettings.AvatarAudioMaxRange : AudioManagerSettings.RoomAudioMaxRange;
         vrcsp.UseAudioSourceVolumeCurve = false;
 
         // enable spatialization if src is not 2D

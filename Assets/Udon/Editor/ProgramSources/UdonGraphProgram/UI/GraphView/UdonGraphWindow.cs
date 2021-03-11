@@ -25,6 +25,8 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
         private UdonGraphStatus _graphStatus;
         private ToolbarButton _graphReload;
         private ToolbarButton _graphCompile;
+        private VisualElement _updateOrderField;
+        private IntegerField _updateOrderIntField;
 
         [MenuItem("VRChat SDK/Udon Graph")]
         private static void ShowWindow()
@@ -175,7 +177,26 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
             _toolbar.Add(_graphAssetName);
 
             _toolbar.Add(new ToolbarFlexSpacer());
-
+            
+            _updateOrderField = new VisualElement()
+            {
+                visible = false,
+            };
+            _updateOrderField.Add(new Label("UpdateOrder"));
+            _updateOrderIntField = new IntegerField()
+            {
+                name = "UpdateOrderIntegerField",
+                value = (_graphAsset == null) ? 0 : _graphAsset.graphData.updateOrder,
+            };
+            _updateOrderIntField.OnValueChanged(e =>
+            {
+                _graphView.graphProgramAsset.graphData.updateOrder = e.newValue;
+                _updateOrderField.visible = false;
+            });
+            _updateOrderIntField.isDelayed = true;
+            _updateOrderField.Add(_updateOrderIntField);
+            _toolbar.Add(_updateOrderField);
+            
             _toolbarOptions = new ToolbarMenu
             {
                 text = "Settings"
@@ -189,6 +210,18 @@ namespace VRC.Udon.Editor.ProgramSources.UdonGraphProgram.UI.GraphView
                 _graphView.ToggleShowMiniMap(!_graphView.GetMinimapVisible());
             }, (s) => { return BoolToStatus(_graphView.GetMinimapVisible()); });
             _toolbarOptions.menu.AppendSeparator();
+            // Show Update Order
+            _toolbarOptions.menu.AppendAction("Show UpdateOrder", (m) =>
+            {
+                _updateOrderField.visible = !(m.status == DropdownMenu.MenuAction.StatusFlags.Checked);
+                if (_updateOrderField.visible)
+                {
+                    _updateOrderIntField.value = _graphAsset.graphData.updateOrder;
+                }
+
+                _updateOrderIntField.Focus();
+                _updateOrderIntField.SelectAll();
+            }, (s) => { return BoolToStatus(_updateOrderField.visible);} );
             // Search On Noodle Drop
             _toolbarOptions.menu.AppendAction("Search on Noodle Drop", (m) => {
                 Settings.SearchOnNoodleDrop = !Settings.SearchOnNoodleDrop;

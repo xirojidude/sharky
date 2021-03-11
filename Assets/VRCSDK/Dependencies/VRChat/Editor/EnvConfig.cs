@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine.Rendering;
-using VRCSDK2.Validation.Performance.Stats;
+using VRC.SDKBase.Validation.Performance.Stats;
 
 /// <summary>
 /// Setup up SDK env on editor launch
@@ -237,7 +237,6 @@ public class EnvConfig
                     importer.SetExcludeFromAnyPlatform(BuildTarget.StandaloneWindows, false);
                     importer.SetExcludeFromAnyPlatform(BuildTarget.StandaloneWindows64, false);
                     importer.SetExcludeFromAnyPlatform(BuildTarget.StandaloneLinux64, false);
-                    importer.SetExcludeFromAnyPlatform(BuildTarget.StandaloneOSX, false);
                 }
                 else
                 {
@@ -247,7 +246,6 @@ public class EnvConfig
                     importer.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows, false);
                     importer.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows64, false);
                     importer.SetCompatibleWithPlatform(BuildTarget.StandaloneLinux64, false);
-                    importer.SetCompatibleWithPlatform(BuildTarget.StandaloneOSX, false);
                 }
                 importer.SaveAndReimport();
             }
@@ -280,10 +278,10 @@ public class EnvConfig
         SetPlayerSettings();
 
 #if VRC_CLIENT
-        PlatformSwitcher.RefreshRequiredPackages(EditorUserBuildSettings.selectedBuildTargetGroup);
-
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
+
+        PlatformSwitcher.RefreshRequiredPackages(EditorUserBuildSettings.selectedBuildTargetGroup);
 #else
         // SDK
 
@@ -638,7 +636,7 @@ public class EnvConfig
         PlayerSettings.SetVirtualRealitySupported(EditorUserBuildSettings.selectedBuildTargetGroup, true);
         #endif
 
-        PlayerSettings.graphicsJobs = false; // else we get occasional crashing
+        PlayerSettings.graphicsJobs = true;
 
         PlayerSettings.gpuSkinning = true;
 
@@ -648,13 +646,9 @@ public class EnvConfig
         PlayerSettings.scriptingRuntimeVersion = ScriptingRuntimeVersion.Latest;
         #endif
 
-        #if VRC_VR_OCULUS_QUEST
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-        #elif VRC_VR_FOCUS
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
-        #endif
-
         #if UNITY_ANDROID
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+
         if(PlayerSettings.Android.targetArchitectures.HasFlag(AndroidArchitecture.ARM64))
         {
             // Since we need different IL2CPP args we can't build ARM64 with other Architectures.

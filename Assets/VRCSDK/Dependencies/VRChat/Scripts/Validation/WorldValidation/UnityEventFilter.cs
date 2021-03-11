@@ -15,6 +15,7 @@ using TMPro;
 #endif
 #if UDON
 using VRC.Udon;
+
 #endif
 #if !VRC_CLIENT && UNITY_EDITOR && VRC_SDK_VRCSDK3
 using UnityEditor;
@@ -91,8 +92,7 @@ namespace VRC.Core
                         List<GameObject> rootGameObjects = new List<GameObject>();
                         currentScene.GetRootGameObjects(rootGameObjects);
 
-                        FilterUIEvents(rootGameObjects);
-                        FilterAnimatorEvents(rootGameObjects);
+                        FilterEvents(rootGameObjects);
                     }
 
                     break;
@@ -120,6 +120,22 @@ namespace VRC.Core
         }
 
         [PublicAPI]
+        public static void FilterEvents(GameObject gameObject)
+        {
+            FilterUIEvents(gameObject);
+            FilterEventTriggerEvents(gameObject);
+            FilterAnimatorEvents(gameObject);
+        }
+
+        [PublicAPI]
+        public static void FilterEvents(List<GameObject> gameObjects)
+        {
+            FilterUIEvents(gameObjects);
+            FilterEventTriggerEvents(gameObjects);
+            FilterAnimatorEvents(gameObjects);
+        }
+
+        [PublicAPI]
         public static void FilterUIEvents(GameObject gameObject)
         {
             List<UIBehaviour> uiBehaviours = new List<UIBehaviour>();
@@ -140,6 +156,29 @@ namespace VRC.Core
             }
 
             FilterUIBehaviourEvents(uiBehaviours);
+        }
+
+        [PublicAPI]
+        public static void FilterEventTriggerEvents(GameObject gameObject)
+        {
+            List<EventTrigger> eventTriggers = new List<EventTrigger>();
+            gameObject.GetComponentsInChildren(true, eventTriggers);
+
+            FilterEventTriggerEvents(eventTriggers);
+        }
+
+        [PublicAPI]
+        public static void FilterEventTriggerEvents(List<GameObject> gameObjects)
+        {
+            HashSet<EventTrigger> eventTriggers = new HashSet<EventTrigger>();
+            List<EventTrigger> eventTriggerWorkingList = new List<EventTrigger>();
+            foreach(GameObject gameObject in gameObjects)
+            {
+                gameObject.GetComponentsInChildren(true, eventTriggerWorkingList);
+                eventTriggers.UnionWith(eventTriggerWorkingList);
+            }
+
+            FilterEventTriggerEvents(eventTriggers);
         }
 
         [PublicAPI]
@@ -252,6 +291,68 @@ namespace VRC.Core
                             unityEventFieldInfo.SetValue(uiBehaviour, Activator.CreateInstance(unityEventBase.GetType()));
                             break;
                         }
+                    }
+                }
+            }
+        }
+
+        private static void FilterEventTriggerEvents(IEnumerable<EventTrigger> eventTriggers)
+        {
+            FieldInfo persistentCallsGroupFieldInfo = typeof(UnityEventBase).GetField("m_PersistentCalls", BindingFlags.Instance | BindingFlags.NonPublic);
+            if(persistentCallsGroupFieldInfo == null)
+            {
+                VerboseLog($"Could not find 'm_PersistentCalls' on UnityEventBase.");
+                return;
+            }
+
+            foreach(EventTrigger eventTrigger in eventTriggers)
+            {
+                VerboseLog($"Checking '{eventTrigger.name} for Unity Events.", eventTrigger);
+
+                List<EventTrigger.Entry> triggers = eventTrigger.triggers;
+                if(triggers.Count <= 0)
+                {
+                    continue;
+                }
+
+                for(int i = triggers.Count - 1; i >= 0; i--)
+                {
+                    EventTrigger.Entry entry = triggers[i];
+                    UnityEventBase unityEventBase = entry.callback;
+                    if(unityEventBase == null)
+                    {
+                        VerboseLog($"Null '{entry.eventID}' UnityEvent on {eventTrigger.name}.", eventTrigger);
+                        continue;
+                    }
+
+                    int numEventListeners = unityEventBase.GetPersistentEventCount();
+                    VerboseLog($"There are '{numEventListeners}' on event '{entry.eventID}' on '{eventTrigger.name}.", eventTrigger);
+                    for(int index = 0; index < numEventListeners; index++)
+                    {
+                        string persistentMethodName = unityEventBase.GetPersistentMethodName(index);
+
+                        UnityEngine.Object persistentTarget = unityEventBase.GetPersistentTarget(index);
+                        if(persistentTarget == null)
+                        {
+                            VerboseLog($"The target for listener '{index}' on event '{entry.eventID}' on '{eventTrigger.name} is null.", eventTrigger);
+                            continue;
+                        }
+
+                        if(IsTargetPermitted(persistentTarget, persistentMethodName))
+                        {
+                            VerboseLog(
+                                $"Allowing event '{entry.eventID}' on '{eventTrigger.name}' to call '{persistentMethodName}' on target '{persistentTarget.name}'.",
+                                eventTrigger);
+
+                            continue;
+                        }
+
+                        LogRemoval(
+                            $"Events on '{eventTrigger.name}' were removed because one of them targeted a prohibited type '{persistentTarget.GetType().Name}', method '{persistentMethodName}' or object '{persistentTarget.name}'.",
+                            eventTrigger);
+
+                        triggers.RemoveAt(i);
+                        break;
                     }
                 }
             }

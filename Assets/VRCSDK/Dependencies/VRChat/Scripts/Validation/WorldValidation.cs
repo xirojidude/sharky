@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace VRCSDK2.Validation
+namespace VRC.SDKBase.Validation
 {
     public static class WorldValidation
     {
@@ -327,8 +327,10 @@ namespace VRCSDK2.Validation
             "VRCSDK2.VRC_UseEvents",
             "VRCSDK2.VRC_UiShape",
             "UnityEngine.Animation",
+#if !UNITY_2019_4_OR_NEWER
             "UnityEngine.GUIText",
             "UnityEngine.GUITexture",
+#endif
             "UnityEngine.Video.VideoPlayer",
             "PhysSound.PhysSoundBase",
             "PhysSound.PhysSoundObject",
@@ -378,7 +380,9 @@ namespace VRCSDK2.Validation
             "UnityStandardAssets.Utility.FPSCounter",
             "UnityStandardAssets.Utility.ObjectResetter",
             "UnityStandardAssets.Utility.ParticleSystemDestroyer",
+#if !UNITY_2019_4_OR_NEWER
             "UnityStandardAssets.Utility.SimpleActivatorMenu",
+#endif
             "UnityStandardAssets.Utility.SimpleMouseRotator",
             "UnityStandardAssets.Utility.SmoothFollow",
             "UnityStandardAssets.Utility.TimedObjectActivator",

@@ -128,9 +128,7 @@ namespace VRCSDK2
                         liveBpImage.enabled = false;
                         bpImage.enabled = true;
 
-                        ImageDownloader.DownloadImage(apiAvatar.imageUrl, 0, delegate (Texture2D obj) {
-                            bpImage.texture = obj;
-                        });
+                        ImageDownloader.DownloadImage(apiAvatar.imageUrl, 0, (Texture2D obj) => bpImage.texture = obj, null);
                     }
                     else // user does not own apiAvatar id associated with descriptor
                     {
@@ -351,9 +349,7 @@ namespace VRCSDK2
             {
                 bpImage.enabled = true;
                 liveBpImage.enabled = false;
-                ImageDownloader.DownloadImage(apiAvatar.imageUrl, 0, delegate (Texture2D obj) {
-                    bpImage.texture = obj;
-                });
+                ImageDownloader.DownloadImage(apiAvatar.imageUrl, 0, obj => bpImage.texture = obj, null);
             }
         }
 

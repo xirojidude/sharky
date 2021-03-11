@@ -12,9 +12,9 @@ namespace VRC.Udon.Editor {
         // Add packages here to auto-import
         public static string[] requiredPackages =
         {
-            "com.unity.cinemachine@2.6.3",
-            "com.unity.postprocessing@2.3.0",
-            "com.unity.textmeshpro@1.4.1",
+            "com.unity.cinemachine@2.6.1",
+            "com.unity.postprocessing@3.0.3",
+            "com.unity.textmeshpro@1.5.1",
         };
         
         private static ListRequest list;
@@ -37,8 +37,7 @@ namespace VRC.Udon.Editor {
             bool importedNewPackage = false;
             foreach (string packageName in requiredPackages)
             {
-                var packageNameNoVersion = packageName.Substring(0, packageName.IndexOf('@'));
-                if(!localPackages.Any(p => p.name == packageNameNoVersion))
+                if(localPackages.All(p => $"{p.name}@{p.version}" != packageName))
                 {
                     Install(packageName);
                     importedNewPackage = true;
