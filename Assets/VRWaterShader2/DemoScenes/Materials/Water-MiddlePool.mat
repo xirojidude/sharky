@@ -133,9 +133,9 @@ Material:
     - _BlendEnableThis: 0
     - _BlendIsAdditive: 0
     - _BumpScale: 1
-    - _CubemapFresnel: 11.5
-    - _CubemapGlossiness: 1
-    - _CubemapStrength: 0.706
+    - _CubemapFresnel: 2.3
+    - _CubemapGlossiness: 0.926
+    - _CubemapStrength: 0.472
     - _CubemapUseCustomCubemap: 0
     - _Cull: 0
     - _Cutoff: 0.5
@@ -152,20 +152,20 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _OverallGloss: 0.961
+    - _OverallGloss: 0.915
     - _OverallMetallic: 1
-    - _OverallNormalStrength: 0.756
+    - _OverallNormalStrength: 1
     - _OverallWaveHeight: 0.82
     - _Parallax: 0.02
-    - _SSRefractionDecaydistance: 38.4
-    - _SSRefractionRefractionFresnel: 3.02
-    - _SSRefractionStrength: 0.245
+    - _SSRefractionDecaydistance: 13.9
+    - _SSRefractionRefractionFresnel: 0.9
+    - _SSRefractionStrength: 0.086
     - _SecondWaveEnableThis: 1
     - _SecondWaveHeightStrength: 0.17
     - _SecondWaveNormalStrength: 0.078
     - _ShadowOffset: 0
-    - _ShadowOpacityRatio: 0.771
-    - _ShadowWaveFactor: 11.6
+    - _ShadowOpacityRatio: 0.293
+    - _ShadowWaveFactor: 25.1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1

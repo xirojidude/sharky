@@ -41,9 +41,13 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 0.04, y: 0.04}
-        m_Offset: {x: -0.09, y: -0.19}
+        m_Scale: {x: -0.01, y: -0.02}
+        m_Offset: {x: 2.78, y: 1.63}
     - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -64,11 +68,14 @@ Material:
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0
+    - _Mitigation: 1
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
+    - _SpeedX: 1
+    - _SpeedY: 1
     - _SrcBlend: 1
     - _UVSec: 0
     - _VignetteEnabled: 0
@@ -77,4 +84,4 @@ Material:
     - _BGColor: {r: 0.42359376, g: 0.48700583, b: 0.53773576, a: 0.08235294}
     - _Color: {r: 0, g: 0.86338776, b: 0.9245283, a: 0.5019608}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _FGColor: {r: 1, g: 1, b: 1, a: 0.34901962}
+    - _FGColor: {r: 1, g: 1, b: 1, a: 0.07058824}
