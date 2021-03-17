@@ -22,10 +22,25 @@ public class Joystick_01 : UdonSharpBehaviour
         if (speed >0.0f) 
         {
         Ship.position += transform.forward * Time.deltaTime * speed;
-        Quaternion newDirection = player.GetBoneRotation( HumanBodyBones.Head );
+        Quaternion bodyDirection =player.GetRotation();
+        Vector3 bodyVector = bodyDirection.eulerAngles;
+        Debug.Log("body(" + bodyVector.x + ", " + bodyVector.y + ", " + bodyVector.z + ")");
+        Vector3 shipVector = Ship.rotation.eulerAngles;
+        Debug.Log("ship(" + Ship.rotation.x + ", " + Ship.rotation.y + ", " + Ship.rotation.z + ") LocalTransforn(" + transform.localEulerAngles.x + ", " + transform.localEulerAngles.y + ", " + transform.localEulerAngles.z + ")");
+
+        Quaternion headDirection = player.GetBoneRotation( HumanBodyBones.Head );
+        Vector3 headVector = headDirection.eulerAngles;
+        Debug.Log("head(" + headVector.x + ", " + headVector.y + ", " + headVector.z + ")  Transforn(" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + ")");
+
+
+//        Quaternion newDirection = Quaternion.FromToRotation(shipVector,headVector);
+        Quaternion newDirection = transform.localRotation; //headDirection;
         newDirection *= Quaternion.Euler(0, -90, 0);
-        Vector3 angles = newDirection.eulerAngles;
-        newDirection = Quaternion.Euler(angles.x, angles.y, -angles.z);
+        Quaternion relativeRotation =  Quaternion.Inverse(newDirection) * Ship.rotation;
+        Vector3 angles = relativeRotation.eulerAngles;
+        Debug.Log("angle(" + angles.x + ", " + angles.y + ", " + angles.z + ")");
+//        newDirection = Quaternion.Euler(angles.x, angles.y, -angles.z);
+        newDirection = Ship.rotation * newDirection;
         Ship.rotation = (Quaternion.Slerp(Ship.rotation, newDirection,  Time.deltaTime * smooth));
         //Ship.Rotate( Input.GetAxis("Vertical"), 0.0f, -Input.GetAxis("Horizontal") );
         }
