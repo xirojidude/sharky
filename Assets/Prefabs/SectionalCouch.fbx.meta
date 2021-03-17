@@ -1,0 +1,192 @@
+fileFormatVersion: 2
+guid: 3a62ac85dda0703498b8c4340f82bafb
+ModelImporter:
+  serializedVersion: 23
+  fileIDToRecycleName:
+    100000: Component
+    100002: Component4
+    100004: cushion_middleRight
+    100006: CushionEndLEft
+    100008: CushionEndLEft.001
+    100010: CushionEndRIght
+    100012: cushionMiddleLeft
+    100014: instance_0
+    100016: instance_1
+    100018: instance_2
+    100020: MCRR6878
+    100022: not_clear_obj_0_v6
+    100024: not_clear_obj_1_v6
+    100026: pillow_middle_right
+    100028: PillowCornerLeft
+    100030: PillowCornerRight
+    100032: PillowLEndLEft
+    100034: PillowMiddleLEft
+    100036: PillowPillowEndRight
+    100038: //RootNode
+    100040: SectionCorner
+    100042: SectionEndLEft
+    100044: SectionEndRight
+    100046: SectionMiddleLeft
+    400000: Component
+    400002: Component4
+    400004: cushion_middleRight
+    400006: CushionEndLEft
+    400008: CushionEndLEft.001
+    400010: CushionEndRIght
+    400012: cushionMiddleLeft
+    400014: instance_0
+    400016: instance_1
+    400018: instance_2
+    400020: MCRR6878
+    400022: not_clear_obj_0_v6
+    400024: not_clear_obj_1_v6
+    400026: pillow_middle_right
+    400028: PillowCornerLeft
+    400030: PillowCornerRight
+    400032: PillowLEndLEft
+    400034: PillowMiddleLEft
+    400036: PillowPillowEndRight
+    400038: //RootNode
+    400040: SectionCorner
+    400042: SectionEndLEft
+    400044: SectionEndRight
+    400046: SectionMiddleLeft
+    2100000: spec__000000_39_Material_2_wf_79_MCRR6878
+    2100002: spec__282828_9_Material_1_wf_43_MCRR6878
+    2300000: Component
+    2300002: Component4
+    2300004: cushion_middleRight
+    2300006: CushionEndLEft
+    2300008: CushionEndLEft.001
+    2300010: CushionEndRIght
+    2300012: cushionMiddleLeft
+    2300014: pillow_middle_right
+    2300016: PillowCornerLeft
+    2300018: PillowCornerRight
+    2300020: PillowLEndLEft
+    2300022: PillowMiddleLEft
+    2300024: PillowPillowEndRight
+    2300026: SectionCorner
+    2300028: SectionEndLEft
+    2300030: SectionEndRight
+    2300032: SectionMiddleLeft
+    3300000: Component
+    3300002: Component4
+    3300004: cushion_middleRight
+    3300006: CushionEndLEft
+    3300008: CushionEndLEft.001
+    3300010: CushionEndRIght
+    3300012: cushionMiddleLeft
+    3300014: pillow_middle_right
+    3300016: PillowCornerLeft
+    3300018: PillowCornerRight
+    3300020: PillowLEndLEft
+    3300022: PillowMiddleLEft
+    3300024: PillowPillowEndRight
+    3300026: SectionCorner
+    3300028: SectionEndLEft
+    3300030: SectionEndRight
+    3300032: SectionMiddleLeft
+    4300000: Component
+    4300002: pillow_middle_right
+    4300004: cushion_middleRight
+    4300006: cushionMiddleLeft
+    4300008: PillowMiddleLEft
+    4300010: PillowLEndLEft
+    4300012: CushionEndLEft
+    4300014: PillowCornerLeft
+    4300016: PillowCornerRight
+    4300018: CushionEndRIght
+    4300020: PillowPillowEndRight
+    4300022: CushionEndLEft.001
+    4300024: Component4
+    4300026: SectionMiddleLeft
+    4300028: SectionEndLEft
+    4300030: SectionEndRight
+    4300032: SectionCorner
+  externalObjects: {}
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    preserveHierarchy: 0
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    previousCalculatedGlobalScale: 1
+    hasPreviousCalculatedGlobalScale: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

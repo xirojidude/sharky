@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Water-MiddlePool
   m_Shader: {fileID: 4800000, guid: 58f047517fd799149bfc42cb67a78e41, type: 3}
-  m_ShaderKeywords: SECOND_ENABLED _BLENDENABLETHIS_ON _CULL_NONE _SECONDWAVEENABLETHIS_ON
+  m_ShaderKeywords: SECOND_ENABLED _BLENDENABLETHIS_ON _CULL_BACK _SECONDWAVEENABLETHIS_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -105,7 +105,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _SSRefractionStrengthMask:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Scale: {x: 0, y: 0}
         m_Offset: {x: 0, y: 0}
     - _SecondWaveHeightmap:
         m_Texture: {fileID: 2800000, guid: d594323606034b0488f0240719eb5964, type: 3}
@@ -133,11 +133,11 @@ Material:
     - _BlendEnableThis: 0
     - _BlendIsAdditive: 0
     - _BumpScale: 1
-    - _CubemapFresnel: 2.3
-    - _CubemapGlossiness: 0.926
-    - _CubemapStrength: 0.472
+    - _CubemapFresnel: 3
+    - _CubemapGlossiness: 1
+    - _CubemapStrength: 0.503
     - _CubemapUseCustomCubemap: 0
-    - _Cull: 0
+    - _Cull: 2
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
@@ -157,26 +157,26 @@ Material:
     - _OverallNormalStrength: 1
     - _OverallWaveHeight: 0.82
     - _Parallax: 0.02
-    - _SSRefractionDecaydistance: 13.9
-    - _SSRefractionRefractionFresnel: 0.9
-    - _SSRefractionStrength: 0.086
+    - _SSRefractionDecaydistance: 3.6
+    - _SSRefractionRefractionFresnel: 1.17
+    - _SSRefractionStrength: 0.545
     - _SecondWaveEnableThis: 1
     - _SecondWaveHeightStrength: 0.17
     - _SecondWaveNormalStrength: 0.078
     - _ShadowOffset: 0
-    - _ShadowOpacityRatio: 0.293
-    - _ShadowWaveFactor: 25.1
+    - _ShadowOpacityRatio: 0.434
+    - _ShadowWaveFactor: 18.6
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _TessellationFarCap: 500
     - _TessellationNearCap: 0
-    - _TessellationStrength: 57.5
+    - _TessellationStrength: 12.7
     - _ThirdWaveEnableThis: 0
     - _ThirdWaveHeightStrength: 0
     - _ThirdWaveNormalStrength: 0.545
     - _UVSec: 0
-    - _ZWrite: 1
+    - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 0.78676474, g: 0.9558823, b: 1, a: 0.222}
     - _BlendColor: {r: 1, g: 0, b: 0, a: 1}
@@ -184,11 +184,11 @@ Material:
     - _Color: {r: 0.8, g: 0.8, b: 0.8, a: 1}
     - _CubemapBaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _FirstWaveUandVspeed: {r: 0.02, g: 0, b: 0, a: 0}
+    - _FirstWaveUandVspeed: {r: 0.02, g: -0.005, b: 0, a: 0}
     - _FirstWaveUandVspeedZWNotused: {r: 0, g: 0, b: 0, a: 0}
     - _FourthWaveUandVspeed: {r: -0.05, g: -0.075, b: 0, a: 0}
     - _FourthWaveUandVspeedZWNotused: {r: -0.05, g: -0.075, b: 0, a: 0}
-    - _SecondWaveUandVspeed: {r: 0.01, g: 0.02, b: 0, a: 0}
+    - _SecondWaveUandVspeed: {r: -0.02, g: 0.06, b: 0, a: 0}
     - _SecondWaveUandVspeedZWNotused: {r: -0.05, g: -0.075, b: 0, a: 0}
     - _ThirdWaveUandVspeed: {r: -0.01, g: -0.1, b: 0, a: 0}
     - _ThirdWaveUandVspeedZWNotused: {r: -0.05, g: -0.075, b: 0, a: 0}

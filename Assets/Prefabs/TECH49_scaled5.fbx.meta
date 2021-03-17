@@ -128,6 +128,11 @@ ModelImporter:
     100244: Windows14.009
     100246: Windows_02
     100248: Windows_02.001
+    100250: FloorLight
+    100252: INSTANT_001_0692f50f-f505-4100-a5fc-8409a454e3c8
+    100254: LandingPadRim
+    100256: LoungeChair2
+    100258: LoungeChar1
     400000: Bed258
     400002: Ceiling43.000
     400004: Ceiling43.003
@@ -253,6 +258,11 @@ ModelImporter:
     400244: Windows14.009
     400246: Windows_02
     400248: Windows_02.001
+    400250: FloorLight
+    400252: INSTANT_001_0692f50f-f505-4100-a5fc-8409a454e3c8
+    400254: LandingPadRim
+    400256: LoungeChair2
+    400258: LoungeChar1
     2100000: M_0131_Silver
     2100002: M_0130_Gainsboro
     2100004: _Charcoal_
@@ -421,6 +431,11 @@ ModelImporter:
     2300232: Windows14.009
     2300234: Windows_02
     2300236: Windows_02.001
+    2300238: FloorLight
+    2300240: INSTANT_001_0692f50f-f505-4100-a5fc-8409a454e3c8
+    2300242: LandingPadRim
+    2300244: LoungeChair2
+    2300246: LoungeChar1
     3300000: Bed258
     3300002: Ceiling43.000
     3300004: Ceiling43.003
@@ -540,6 +555,11 @@ ModelImporter:
     3300232: Windows14.009
     3300234: Windows_02
     3300236: Windows_02.001
+    3300238: FloorLight
+    3300240: INSTANT_001_0692f50f-f505-4100-a5fc-8409a454e3c8
+    3300242: LandingPadRim
+    3300244: LoungeChair2
+    3300246: LoungeChar1
     4300000: LandingPadRail
     4300002: Rail11
     4300004: Mesh161
@@ -659,6 +679,11 @@ ModelImporter:
     4300232: Mesh279.007
     4300234: Plane.005
     4300236: Circle.003
+    4300238: LandingPadRim
+    4300240: FloorLight
+    4300242: LoungeChar1
+    4300244: LoungeChair2
+    4300246: INSTANT_001_0692f50f-f505-4100-a5fc-8409a454e3c8
     2186277476908879412: ImportLogs
   externalObjects: {}
   materials:
