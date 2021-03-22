@@ -9,19 +9,42 @@ public class Joystick_01 : UdonSharpBehaviour
 
     //[SerializeField] Transform Ship;
     public Transform Ship;
-    private float speed = 0.0f;
+    public Transform SpawnLocation;
+    public float speed = 0.0f;
+    public float vspeed = 0.0f;
+    public int mode = 0;
+    public float maxSpeed = 50.0f;
+    public float acceleration = 0.005f;
+    public float deceleration = 0.005f;
+    private float thrust = 0.0f;
     private VRCPlayerApi player;
     private float smooth = 1.1f;
     private Vector3 joystickSpawnPosition;
     private Quaternion joystickSpawnRotation;
+ 
+    Quaternion JoystickZeroPoint;
+    private float roll = 0f;
+    private float pitch = 0f;
+    private float yaw = 0f;
+
+    [System.NonSerializedAttribute] [UdonSynced(UdonSyncMode.Linear)] public Vector3 RotationInputs;
+    [System.NonSerializedAttribute] public bool Piloting = false;
+    [System.NonSerializedAttribute] public bool InEditor = true;
+    [System.NonSerializedAttribute] public bool InVR = false;
+    [System.NonSerializedAttribute] public bool Passenger = false;
+    [System.NonSerializedAttribute] public Vector3 LastFrameVel = Vector3.zero;
 
     void Start()
     {
         player = Networking.LocalPlayer;
+        Networking.SetOwner(player, gameObject);
+        if (player.IsUserInVR()) { InVR = true; }
+//        joystickSpawnPosition = new Vector3(1.7899f,-0.5435001f,0.03769994f);
         joystickSpawnPosition = this.transform.localPosition;
         joystickSpawnRotation = this.transform.localRotation;
     }
-    void Update() {
+//    void Update() {
+    void FixedUpdate() {
 
         if (speed >0.0f) 
         {
@@ -69,22 +92,32 @@ public class Joystick_01 : UdonSharpBehaviour
 //        Ship.rotation = (Quaternion.Slerp(Ship.rotation, Quaternion.Euler(0.0f, Ship.rotation.y,Ship.rotation.z),  Time.deltaTime * smooth));
         //Ship.Rotate( Input.GetAxis("Vertical"), 0.0f, -Input.GetAxis("Horizontal") );
         }
+
+        if (mode == 1)  
+        {
+            speed = Mathf.Min(maxSpeed,speed+acceleration+(acceleration*speed));
+        }
+            else 
+        {
+            speed = Mathf.Max(0.0f,speed-deceleration-(deceleration*speed));
+        }
+        vspeed = Mathf.Max(0.0f,vspeed-deceleration);
+        Ship.position += transform.up * Time.deltaTime * vspeed;
     }
 
     void OnPickupUseDown()
     {
-        speed = 40.0f;
+        mode = 1;
     }
 
     void OnPickupUseUp()
     {
-        speed = 0.0f;
+        mode = 0;
     }
 
     void OnPickup()
     {
-        Ship.position += transform.forward * Time.deltaTime * 40.0f;
-
+        vspeed = 2.0f;
         Ship.Rotate( Input.GetAxis("Vertical"), 0.0f, -Input.GetAxis("Horizontal") );
 
 //        float terrainHeightWhereWeAre = Terrain.activeTerrain.SampleHeight( transform.position );
@@ -98,7 +131,13 @@ public class Joystick_01 : UdonSharpBehaviour
     void OnDrop()
     {
         // reset position of joystick to original
-        this.transform.localPosition = joystickSpawnPosition;
-        this.transform.localRotation = joystickSpawnRotation;
+        this.transform.position=SpawnLocation.position;
+  //      this.transform.rotation=SpawnLocation.rotation;
+        // this.transform.localPosition = joystickSpawnPosition;
+        // this.transform.localRotation = joystickSpawnRotation;
+        this.speed = 0.0f;
+        this.mode = 0;
+        this.vspeed = 0.0f;
+
     }
 }

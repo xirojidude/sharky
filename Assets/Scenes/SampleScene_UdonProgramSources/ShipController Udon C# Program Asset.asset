@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: ShipController Udon C# Program Asset
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: f9c543c9eec60a24a9159c69382a015f,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 10248974c2ca28046b514fa96ceece2f,
     type: 2}
   udonAssembly: 
   assemblyError: 
