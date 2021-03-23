@@ -21,15 +21,10 @@
             #pragma only_renderers d3d9 d3d11 glcore gles n3ds wiiu 
             #pragma target 3.0
 
-            // make fog work
-            #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;
-//            Texture2D _MainTex;
-
-         // Use mouse to control the camera & time.
 
 
         float time = 0.0;
@@ -47,7 +42,7 @@
 
         float noises( in float3 p){
             float a = 0.0;
-            for(float i=1.0;i<6.0;i++){
+            for(float i=1.0;i<3.0;i++){
                 a += noise(p)/i;
                 p = p*2.0 + float3(0.0,a*0.001/i,a*0.0001/i);
             }
@@ -66,7 +61,6 @@
 
             struct v2f
             {
-                UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
                 float4 posWorld : TEXCOORD0;
             };
@@ -75,16 +69,9 @@
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                //o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.posWorld = mul(unity_ObjectToWorld, v.vertex);
-               // UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
-
-
-
-
-
  
 
             fixed4 frag (v2f i) : SV_Target
@@ -99,8 +86,9 @@
                 float2 uv     = i.posWorld.xy; //fragCoord.xy/(iResolution.xx*0.5)-float2(1.0,iResolution.y/iResolution.x);
                 float3 ray = viewDirection;
                 
-                
-                float4 fragColor = float4(noises(ray),noises(ray),noises(ray),1.);
+                float color = noises(ray);
+                color = (color<.1)?0.:color;
+                float4 fragColor = float4(color,color,color,1.);
                 return fragColor;
                 
 

@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: FoggyMountain
+  m_Name: FoggyMountain 1
   m_Shader: {fileID: 4800000, guid: d8a4204ffc64efd48aef02483b90e8f7, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -24,22 +24,22 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _BaseAlt: 40
-    - _BaseSeed: 4
-    - _CamHeight: 916.2
-    - _CloudAlt: 80
-    - _CloudFactor: 0
-    - _CloudSpeed: 0.1
-    - _G1: 0.00002
-    - _G2: 0.3
-    - _G3: -3.3
-    - _G4: 0.4
-    - _MtnHeight: 626.3
-    - _NoiseScale: 120.2
-    - _SunHeight: -7.54
-    - _SunLat: -0.298
+    - _BaseAlt: 457.71
+    - _BaseSeed: 1.5
+    - _CamHeight: 138.7
+    - _CloudAlt: 205.1
+    - _CloudFactor: 86.2
+    - _CloudSpeed: 68.4
+    - _G1: 0.00004
+    - _G2: 7.63
+    - _G3: 204.98
+    - _G4: -0.03
+    - _MtnHeight: 88
+    - _NoiseScale: 597.78
+    - _SunHeight: 0.5
+    - _SunLat: 0.5
     m_Colors:
-    - _CloudColor: {r: 0.90588236, g: 0.73420477, b: 0.6585765, a: 1}
-    - _GroundColor: {r: 0.6117647, g: 0.5793625, b: 0.5686275, a: 1}
-    - _SkyColor: {r: 0.7529412, g: 0.61326087, b: 0.57254905, a: 1}
-    - _SunColor: {r: 0.49019608, g: 0.33082616, b: 0.2392157, a: 1}
+    - _CloudColor: {r: 0.73399997, g: 0.81867445, b: 1, a: 1}
+    - _GroundColor: {r: 0.6037736, g: 0.6037736, b: 0.6037736, a: 1}
+    - _SkyColor: {r: 9.478747, g: 26.903162, b: 37.91499, a: 1}
+    - _SunColor: {r: 0.754717, g: 0.33819866, b: 0.33819866, a: 1}

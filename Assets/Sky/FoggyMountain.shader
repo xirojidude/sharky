@@ -3,6 +3,22 @@
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _BaseAlt ("Noise Scale", Float ) = 600.
+        _BaseSeed ("Noise Seed", Float ) = 20.
+        _CloudAlt ("Cloud Fequency", Float ) = 100.0
+        _CloudFactor ("Cloud Factor", Float ) = 0.00002
+        _CloudSpeed ("Cloud Speed", Float ) = 50.
+        _G1 ("Ground Factor1", Float ) = 0.00005
+        _G2 ("Ground Factor2", Float ) = 10.0
+        _G3 ("Mountain Height", Float ) = 40.0
+        _G4 ("Ground Factor4", Float ) = 0.01
+        _CamHeight ("Camera Height", Float) = 500.0
+        _GroundColor ("Ground Color", Color) = (.3,.3,.3,1) 
+        _SkyColor ("Sky Color", Color) = (0.1,.30,0.1,1) 
+        _SunColor ("Sun Color", Color) = (0.1,.30,0.1,1) 
+        _CloudColor ("Cloud Color", Color) = (0.70,0.72,0.70,1)
+        _SunLat ("Sun Lat", Range (-1.0,1.)) = 0.5 // sliders 
+        _SunHeight ("Sun Height", Range (-10,1.)) = 0.5 // sliders 
     }
     SubShader
     {
@@ -22,12 +38,22 @@
             #pragma target 3.0
 
             // make fog work
-            #pragma multi_compile_fog
+   //         #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 
+            SamplerState my_point_clamp_sampler;
             sampler2D _MainTex;
 //            Texture2D _MainTex;
+            float _BaseAlt;
+            float _BaseSeed;
+            float _CloudAlt;
+            float _CloudFactor;
+            float _CloudSpeed;
+            float _G1,_G2,_G3,_G4;
+            float _CamHeight;
+            float4 _GroundColor,_SkyColor,_SunColor,_CloudColor;
+            float _SunLat,_SunHeight;
 
          // Use mouse to control the camera & time.
 
@@ -43,7 +69,6 @@
             float2 uv1 = x.xy + offz*floor(z); 
             float2 uv2 = uv1  + offz;
          //   return lerp(textureLod( iChannel0, uv1 ,0.0).x,textureLod( iChannel0, uv2 ,0.0).x,fract(z))-0.5;
-            SamplerState my_point_clamp_sampler;
         //    return lerp(_MainTex.SampleLevel(my_point_clamp_sampler,  uv1 ,0.0).x,_MainTex.SampleLevel(my_point_clamp_sampler,  uv2 ,0.0).x,frac(z))-0.5;
             return lerp(tex2D(_MainTex,  uv1 ).x,tex2D(_MainTex,  uv2 ).x,frac(z))-0.5;
         //    return tex2D(_MainTex,  uv1 ).x;
@@ -51,7 +76,7 @@
 
         float noises( in float3 p){
             float a = 0.0;
-            for(float i=1.0;i<6.0;i++){
+            for(float i=1.0;i<3.0;i++){
                 a += noise(p)/i;
                 p = p*2.0 + float3(0.0,a*0.001/i,a*0.0001/i);
             }
@@ -59,20 +84,23 @@
         }
 
         float base( in float3 p){
-            return noise(p*0.00002)*1200.0;
+            return noise(p*_BaseSeed)*_BaseAlt;
         }
 
         float ground( in float3 p){
-            //return p.y + 1.;                            // horizontal plane at y = -1
-            return base(p)+noises(p.zxy*0.00005+10.0)*40.0*(0.0-p.y*0.01)+p.y;
+ //           return p.y + 1.;                            // horizontal plane at y = -1
+//            return base(p)+noises(p.zxy*0.00005+10.0)*40.0*(0.0-p.y*0.01)+p.y;
+
+            return base(p)+noises(p.zxy*_G1+_G2)*_G3*(0.0-p.y*_G4)+p.y;
+            //return base(p)+noises(float3(p.xz,0.)*_G1+_G2)*_G3)*(0.0-p.y*_G4);//+p.y;
         }
 
         float clouds( in float3 p){
             float b = base(p);
-            p.y += b*0.5/abs(p.y) + 100.0;
+            p.y += b*0.5/abs(p.y) + _CloudAlt;
 
         //    return noises(float3(p.x*0.3+((time+iMouse.y)*30.0),p.y,p.z)*0.00002)-max(p.y,0.0)*0.00009;
-            return noises(float3(p.x*0.3+((time)*30.0),p.y,p.z)*0.00002)-max(p.y,0.0)*0.00009;
+            return noises(float3(p.x*0.3+((time)*_CloudSpeed),p.y,p.z)*_CloudFactor)-max(p.y,0.0)*0.00009;
         }
 
             
@@ -94,8 +122,7 @@
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                //o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.posWorld = mul(unity_ObjectToWorld, v.vertex);
+                 o.posWorld = mul(unity_ObjectToWorld, v.vertex);
                // UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
@@ -104,52 +131,22 @@
 
 
 
-            //
-            // Distance field function for the scene. It combines
-            // the seperate distance field functions of three spheres
-            // and a plane using the min-operator.
-            //
-
-            float map(float3 p) {
-                float d = distance(p, float3(-10, 0, -50)) - 5.;     // sphere at (-1,0,5) with radius 1
-                d = min(d, distance(p, float3(20, 0, -30)) - 10.);    // second sphere
-                d = min(d, distance(p, float3(-20, 0, -20)) - 10.);   // and another
-                d = min(d, p.y + 1.);                            // horizontal plane at y = -1
-                return d;
-            }
-
-            //
-            // Calculate the normal by taking the central differences on the distance field.
-            //
-            float3 calcNormal(in float3 p) {
-                float2 e = float2(1.0, -1.0) * 0.0005;
-                return normalize(
-                    e.xyy * map(p + e.xyy) +
-                    e.yyx * map(p + e.yyx) +
-                    e.yxy * map(p + e.yxy) +
-                    e.xxx * map(p + e.xxx));
-            }
-
-
             fixed4 frag (v2f i) : SV_Target
             {   
                 float3 viewDirection = normalize(i.posWorld.xyz- _WorldSpaceCameraPos.xyz  );
-                float3 worldPos = i.posWorld.xyz;//_WorldSpaceCameraPos.xyz;
+                float3 worldPos = _WorldSpaceCameraPos.xyz;
 
-                float3 finalColor = float4(0.5,0.4,0.6,0.);
+                float3 finalColor;
 
                 time        = _Time.y*5.0+floor(_Time.y*0.1)*150.0;
                 //time = 0.;
-                float2 uv     = i.posWorld.xy; //fragCoord.xy/(iResolution.xx*0.5)-float2(1.0,iResolution.y/iResolution.x);
-                float3 campos   = float3(30.0,500.0,time*8.0);
-                     //campos = worldPos;
-                     campos.y = 500.0-base(campos);
+                float2 uv     = i.vertex.xy; 
+                float3 campos  = worldPos;
+                    campos.y = _CamHeight;//-base(campos);
 
-            //    float3 ray   = rotate(normalize(float3(uv.x,uv.y-sin(time*0.05)*0.2-0.1,1.0).xyz),time*0.01+iMouse.x*0.009);
-                float3 ray   = rotate(normalize(float3(uv.x,uv.y-sin(time*0.05)*0.2-0.1,1.0).xyz),time*0.01+worldPos.x*0.009);
-                ray = viewDirection;
+                float3 ray = viewDirection;
                 float3 pos    = campos+ray;
-                float3 sun    = float3(0.0,600.,-400.);       
+                float3 sun    = float3(0.0,_SunLat,_SunHeight);       
                 
                 // raymarch
                 float test  = 0.0;
@@ -159,7 +156,7 @@
                 float3  p1 = pos; 
                 for(float i=1.0;i<50.0;i++){
                     test  = ground(p1); 
-                    fog  += max(test*clouds(p1),fog*0.02);
+                    fog  += max(test*clouds(p1),fog*0.2);
                     p1   += ray*min(test,i*i*0.5);
                     dist += test;
                     if(abs(test)<10.0||dist>40000.0) break;
@@ -168,20 +165,24 @@
                 float l     = sin(dot(ray,sun));
                 float3  light = float3(l,0.0,-l)+ray.y*0.2;
                 
-                float amb = smoothstep(-100.0,100.0,ground(p1+float3(0.0,30.0,0.0)+sun*10.0))-smoothstep(1000.0,-0.0,p1.y)*0.7;
-                float3  ground = float3(0.30,0.30,0.25)+sin(p1*0.001)*0.01+noise(float3(p1*0.02))*0.1+amb*0.7+light*0.01;
+//                float amb = smoothstep(-100.0,100.0,ground(p1+float3(0.0,30.0,0.0)+sun*10.0))-smoothstep(1000.0,-0.0,p1.y)*0.7;
+                float amb = smoothstep(-100.0,100.0,ground(p1+float3(_CloudColor.xyz)+sun*10.0))-smoothstep(1000.0,-0.0,p1.y)*0.7;
+//                float3  ground = float3(0.10,0.20,0.15)+sin(p1*0.001)*0.01+noise(float3(p1*0.02))*0.1+amb*0.7+light*0.01;
+                float3  ground = float3(_GroundColor.xyz)+sin(p1*0.001)*0.01+noise(float3(p1*0.02))*0.1+amb*0.7+light*0.01;
                     
                 float f = smoothstep(0.0,800.0,fog);
-                float3  cloud = float3(0.70,0.72,0.70)+light*0.05+sin(fog*0.0002)*0.2+noise(p1)*0.05;
+//                float3  cloud = float3(0.70,0.72,0.70)+light*0.05+sin(fog*0.0002)*0.2+noise(p1)*0.05;
+                float3  cloud = float3(_SkyColor.xyz)+light*0.05+sin(fog*0.0002)*0.2+noise(p1)*0.05;
 
                 float ht = smoothstep(10000.,40000.0,dist);
-                float3  sky = cloud+ray.y*0.1-0.02;   
+                float3  sky = (ray.y*0.1-0.02)+cloud;   
 
 
                 float4 fragColor; //= float4(finalColor.xyz,1.0);
            //     fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f)-dot(uv,uv)*0.1)),1.0);
            //     fragColor = float4(lerp(ground,sky,ht),1.0);
-           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f))-noise(ray)*.1),1.0);
+//           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f))-noise(ray)*.01),1.0);
+           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f))),1.0);
            //     fragColor = float4(noises(rd),noises(rd),noises(rd),1.);
                 return fragColor;
                 
