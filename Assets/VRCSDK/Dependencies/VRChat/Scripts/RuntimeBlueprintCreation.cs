@@ -27,6 +27,7 @@ namespace VRCSDK2
         public Toggle developerAvatar;
         public Toggle sharePrivate;
         public Toggle sharePublic;
+        public Toggle tagFallback;
 
         public UnityEngine.UI.Button uploadButton;
 
@@ -122,6 +123,27 @@ namespace VRCSDK2
                         developerAvatar.isOn = apiAvatar.tags.Contains("developer");
                         sharePrivate.isOn = apiAvatar.releaseStatus.Contains("private");
                         sharePublic.isOn = apiAvatar.releaseStatus.Contains("public");
+
+                        tagFallback.isOn = apiAvatar.tags.Contains("author_quest_fallback");
+                        switch (pipelineManager.fallbackStatus)
+                        {
+                            case PipelineManager.FallbackStatus.Valid:
+                                tagFallback.transform.parent.gameObject.SetActive(true);
+                                tagFallback.interactable = true;
+                                tagFallback.GetComponentInChildren<Text>().text = "Use for Fallback";
+                                break;
+                            case PipelineManager.FallbackStatus.InvalidPerformance:
+                            case PipelineManager.FallbackStatus.InvalidRig:
+                                tagFallback.transform.parent.gameObject.SetActive(true);
+                                tagFallback.isOn = false; // need to remove tag on this upload, the updated version is not up-to-spec
+                                tagFallback.interactable = false;
+                                tagFallback.GetComponentInChildren<Text>().text = "(Not valid for Fallback use)";
+                                break;
+                            default:
+                                tagFallback.transform.parent.gameObject.SetActive(false);
+                                break;
+                        }
+
                         blueprintDescription.text = apiAvatar.description;
                         shouldUpdateImageToggle.interactable = true;
                         shouldUpdateImageToggle.isOn = false;
@@ -144,6 +166,25 @@ namespace VRCSDK2
                     shouldUpdateImageToggle.isOn = true;
                     liveBpImage.enabled = true;
                     bpImage.enabled = false;
+                    tagFallback.isOn = false;
+
+                    switch (pipelineManager.fallbackStatus)
+                    {
+                        case PipelineManager.FallbackStatus.Valid:
+                            tagFallback.transform.parent.gameObject.SetActive(true);
+                            tagFallback.interactable = true;
+                            tagFallback.GetComponentInChildren<Text>().text = "Use for Fallback";
+                            break;
+                        case PipelineManager.FallbackStatus.InvalidPerformance:
+                        case PipelineManager.FallbackStatus.InvalidRig:
+                            tagFallback.transform.parent.gameObject.SetActive(true);
+                            tagFallback.interactable = false;
+                            tagFallback.GetComponentInChildren<Text>().text = "(Not valid for Fallback use)";
+                            break;
+                        default:
+                            tagFallback.transform.parent.gameObject.SetActive(false);
+                            break;
+                    }
                 }
             }
             else
@@ -173,7 +214,6 @@ namespace VRCSDK2
             UnityEditor.EditorPrefs.SetBool("VRCSDK2_content_violence", contentViolence.isOn);
             UnityEditor.EditorPrefs.SetBool("VRCSDK2_content_gore", contentGore.isOn);
             UnityEditor.EditorPrefs.SetBool("VRCSDK2_content_other", contentOther.isOn);
-
 
             if (string.IsNullOrEmpty(apiAvatar.id))
             {
@@ -258,6 +298,9 @@ namespace VRCSDK2
                 if (developerAvatar.isOn)
                     tags.Add("developer");
             }
+
+            if (tagFallback.isOn)
+                tags.Add("author_quest_fallback");
 
             return tags;
         }

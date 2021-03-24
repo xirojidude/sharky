@@ -118,6 +118,7 @@ MonoBehaviour:
   blueprintId: 
   contentType: 1
   assetBundleUnityVersion: 
+  fallbackStatus: 0
 --- !u!114 &1415578911040940289
 MonoBehaviour:
   m_ObjectHideFlags: 0

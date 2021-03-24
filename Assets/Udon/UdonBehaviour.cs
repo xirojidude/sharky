@@ -9,6 +9,7 @@ using VRC.SDK3.Components;
 using VRC.SDKBase;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Attributes;
+using VRC.Udon.Common.Enums;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Serialization.OdinSerializer;
 using VRC.Udon.VM;
@@ -428,6 +429,8 @@ namespace VRC.Udon
 
         public void OnDestroy()
         {
+            if (_program == null) return;
+            
             foreach (string entryPoint in _program.EntryPoints.GetExportedSymbols())
             {
                 uint address = _program.EntryPoints.GetAddressFromSymbol(entryPoint);
@@ -1079,7 +1082,21 @@ namespace VRC.Udon
 
         public override void SendCustomNetworkEvent(NetworkEventTarget target, string eventName)
         {
+#if UNITY_EDITOR
+            SendCustomEvent(eventName);
+#else
             SendCustomNetworkEventHook?.Invoke(this, target, eventName);
+#endif
+        }
+
+        public override void SendCustomEventDelayedSeconds(string eventName, float delaySeconds, EventTiming eventTiming = EventTiming.Update)
+        {
+            UdonManager.Instance.ScheduleDelayedEvent(this, eventName, delaySeconds, eventTiming);
+        }
+
+        public override void SendCustomEventDelayedFrames(string eventName, int delayFrames, EventTiming eventTiming = EventTiming.Update)
+        {
+            UdonManager.Instance.ScheduleDelayedEvent(this, eventName, delayFrames, eventTiming);
         }
 
         #endregion

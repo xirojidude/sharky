@@ -21,8 +21,12 @@ namespace VRCPrefabs.CyanEmu
         private CyanEmuSettings settings_;
         private CyanEmuPlayerController playerController_;
         private VRC_SceneDescriptor descriptor_;
-        private HashSet<CyanEmuSyncedObjectHelper> allSyncedObjects_ = new HashSet<CyanEmuSyncedObjectHelper>();
         private Transform proxyObjectParents_;
+
+        private bool shouldVerifySyncedObjectList_;
+        private readonly Queue<CyanEmuSyncedObjectHelper> toBeAddedSync_ = new Queue<CyanEmuSyncedObjectHelper>();
+        private readonly Queue<CyanEmuSyncedObjectHelper> toBeRemovedSync_ = new Queue<CyanEmuSyncedObjectHelper>();
+        private HashSet<CyanEmuSyncedObjectHelper> allSyncedObjects_ = new HashSet<CyanEmuSyncedObjectHelper>();
 
         private int spawnedObjectCount_;
         private bool networkReady_;
@@ -80,6 +84,8 @@ namespace VRCPrefabs.CyanEmu
 
 #if UDON
             VRC.Udon.UdonBehaviour.OnInit = CyanEmuUdonHelper.OnInit;
+            
+            // This is no longer used as of SDK 2021.03.22.18.27
             VRC.Udon.UdonBehaviour.SendCustomNetworkEventHook = CyanEmuUdonHelper.SendCustomNetworkEventHook;
 #endif
 
@@ -299,10 +305,9 @@ namespace VRCPrefabs.CyanEmu
 
                 SpawnLocalPlayer();
             }
-
-            yield return new WaitForSeconds(0.1f);
-
             networkReady_ = true;
+            
+            yield return new WaitForSeconds(0.1f);
             CyanEmuPlayerManager.OnNetworkReady();
         }
 
@@ -413,6 +418,11 @@ namespace VRCPrefabs.CyanEmu
 
             foreach (CyanEmuSyncedObjectHelper sync in allSyncedObjects_)
             {
+                if (sync == null)
+                {
+                    continue;
+                }
+                
                 GameObject syncObj = sync.gameObject;
                 if (Networking.GetOwner(syncObj)?.playerId == player.playerId)
                 {
@@ -421,6 +431,16 @@ namespace VRCPrefabs.CyanEmu
             }
 
             sdkManager_.OnPlayerLeft(player);
+        }
+
+        public static void PlayerRespawned(VRCPlayerApi player)
+        {
+            instance_?.OnPlayerRespawn(player);
+        }
+
+        private void OnPlayerRespawn(VRCPlayerApi player)
+        {
+            sdkManager_.OnPlayerRespawn(player);
         }
 
         public static GameObject SpawnObject(GameObject prefab)
@@ -452,14 +472,29 @@ namespace VRCPrefabs.CyanEmu
             {
                 return;
             }
+            
+            ProcessAddedAndRemovedSyncedObjects();
+            ProcessSyncedObjectsBelowRespawn();
+        }
 
+        private void ProcessSyncedObjectsBelowRespawn()
+        {
             if (playerController_ != null && playerController_.transform.position.y < descriptor_.RespawnHeightY)
             {
                 playerController_.Teleport(descriptor_.spawns[0], false);
             }
-
+            
+            // TODO space this out so that there are only x number per frame instead of all every time? 
+            List<GameObject> objsToDestroy = new List<GameObject>();
             foreach (CyanEmuSyncedObjectHelper sync in allSyncedObjects_)
             {
+                if (sync == null)
+                {
+                    shouldVerifySyncedObjectList_ = true;
+                    Debug.LogWarning("Null Synced Object!");
+                    continue;
+                }
+                
                 if (!sync.SyncPosition)
                 {
                     continue;
@@ -473,20 +508,25 @@ namespace VRCPrefabs.CyanEmu
                     }
                     else
                     {
-                        Destroy(sync.gameObject);
+                        objsToDestroy.Add(sync.gameObject);
                     }
                 }
             }
-        }
 
+            foreach (var obj in objsToDestroy)
+            {
+                Destroy(obj);
+            }
+        }
+        
         public static void AddSyncedObject(CyanEmuSyncedObjectHelper sync)
         {
-            if (instance_ == null)
+            if (instance_ == null || sync == null)
             {
                 return;
             }
 
-            instance_.allSyncedObjects_.Add(sync);
+            instance_.QueueAddSyncedObject(sync);
         }
 
         public static void RemoveSyncedObject(CyanEmuSyncedObjectHelper sync)
@@ -496,7 +536,67 @@ namespace VRCPrefabs.CyanEmu
                 return;
             }
 
-            instance_.allSyncedObjects_.Remove(sync);
+            instance_.QueueRemoveSyncedObject(sync);
+        }
+        
+        private void QueueAddSyncedObject(CyanEmuSyncedObjectHelper syncedObject)
+        {
+            if (syncedObject == null)
+            {
+                return;
+            }
+            toBeAddedSync_.Enqueue(syncedObject);
+        }
+        
+        private void QueueRemoveSyncedObject(CyanEmuSyncedObjectHelper syncedObject)
+        {
+            shouldVerifySyncedObjectList_ = true;
+            toBeRemovedSync_.Enqueue(syncedObject);
+        }
+        
+        private void ProcessAddedAndRemovedSyncedObjects()
+        {
+            if (toBeAddedSync_.Count > 0)
+            {
+                foreach (var sync in toBeAddedSync_)
+                {
+                    if (sync == null)
+                    {
+                        shouldVerifySyncedObjectList_ = true;
+                        continue;
+                    }
+                    allSyncedObjects_.Add(sync);
+                }
+                toBeAddedSync_.Clear();
+            }
+            if (toBeRemovedSync_.Count > 0)
+            {
+                foreach (var udon in toBeRemovedSync_)
+                {
+                    if (udon == null)
+                    {
+                        shouldVerifySyncedObjectList_ = true;
+                        continue;
+                    }
+                    allSyncedObjects_.Remove(udon);
+                }
+                toBeRemovedSync_.Clear();
+            }
+
+            if (shouldVerifySyncedObjectList_)
+            {
+                HashSet<CyanEmuSyncedObjectHelper> allSyncs = new HashSet<CyanEmuSyncedObjectHelper>();
+                foreach (var sync in allSyncedObjects_)
+                {
+                    if (sync == null)
+                    {
+                        continue;
+                    }
+                    allSyncs.Add(sync);
+                }
+
+                allSyncedObjects_ = allSyncs;
+            }
         }
     }
 }

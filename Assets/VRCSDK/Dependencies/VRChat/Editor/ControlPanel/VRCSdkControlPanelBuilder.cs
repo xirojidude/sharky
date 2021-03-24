@@ -78,6 +78,11 @@ public partial class VRCSdkControlPanel : EditorWindow
     Dictionary<Object, List<Issue>> GUILinks = new Dictionary<Object, List<Issue>>();
     Dictionary<Object, List<Issue>> GUIStats = new Dictionary<Object, List<Issue>>();
 
+    public bool NoGuiErrors()
+    {
+        return GUIErrors.Count == 0;
+    }
+
     public bool NoGuiErrorsOrIssues()
     {
         return GUIErrors.Count == 0 && CheckedForIssues;
@@ -551,12 +556,18 @@ public partial class VRCSdkControlPanel : EditorWindow
         if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.StandaloneWindows || EditorUserBuildSettings.activeBuildTarget == BuildTarget.StandaloneWindows64 && GUILayout.Button("Switch Build Target to Android"))
         {
             if (EditorUtility.DisplayDialog("Build Target Switcher", "Are you sure you want to switch your build target to Android? This could take a while.", "Confirm", "Cancel"))
+            {
+                EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Android;
                 EditorUserBuildSettings.SwitchActiveBuildTargetAsync(BuildTargetGroup.Android, BuildTarget.Android);
+            }
         }
         if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android && GUILayout.Button("Switch Build Target to Windows"))
         {
             if (EditorUtility.DisplayDialog("Build Target Switcher", "Are you sure you want to switch your build target to Windows? This could take a while.", "Confirm", "Cancel"))
+            {
+                EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Standalone;
                 EditorUserBuildSettings.SwitchActiveBuildTargetAsync(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
+            }
         }
     }
 

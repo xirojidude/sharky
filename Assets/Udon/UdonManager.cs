@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using VRC.Udon.ClientBindings;
 using VRC.Udon.ClientBindings.Interfaces;
 using VRC.Udon.Common;
+using VRC.Udon.Common.Enums;
 using VRC.Udon.Common.Interfaces;
 using Logger = VRC.Core.Logger;
 using Object = UnityEngine.Object;
@@ -17,7 +18,32 @@ namespace VRC.Udon
     {
         public UdonBehaviour currentlyExecuting;
 
+        #region Singleton
+
         private static UdonManager _instance;
+
+        [PublicAPI]
+        public static UdonManager Instance
+        {
+            get
+            {
+                #if !VRC_CLIENT
+                if(_instance != null)
+                {
+                    return _instance;
+                }
+
+                GameObject udonManagerGameObject = new GameObject("UdonManager");
+                DontDestroyOnLoad(udonManagerGameObject);
+                _instance = udonManagerGameObject.AddComponent<UdonManager>();
+                #endif
+
+                return _instance;
+            }
+        }
+
+        #endregion
+
         private static readonly UpdateOrderComparer _udonBehaviourUpdateOrderComparer = new UpdateOrderComparer();
 
         private bool _isUdonEnabled = true;
@@ -26,19 +52,16 @@ namespace VRC.Udon
             _sceneUdonBehaviourDirectories =
                 new Dictionary<Scene, Dictionary<GameObject, HashSet<UdonBehaviour>>>();
 
+        #region Private Update Data
+
         private readonly SortedSet<UdonBehaviour> _updateUdonBehaviours =
             new SortedSet<UdonBehaviour>(_udonBehaviourUpdateOrderComparer);
 
         private readonly SortedSet<UdonBehaviour> _lateUpdateUdonBehaviours =
             new SortedSet<UdonBehaviour>(_udonBehaviourUpdateOrderComparer);
 
-        public const string UDON_EVENT_ONPLAYERRESPAWN = "_onPlayerRespawn";
-        
         private readonly SortedSet<UdonBehaviour> _fixedUpdateUdonBehaviours =
             new SortedSet<UdonBehaviour>(_udonBehaviourUpdateOrderComparer);
-
-        private Dictionary<string, HashSet<UdonBehaviour>> _inputUdonBehaviours =
-            new Dictionary<string, HashSet<UdonBehaviour>>();
 
         private readonly Queue<(UdonBehaviour udonBehaviour, bool newState)> _updateUdonBehavioursRegistrationQueue =
             new Queue<(UdonBehaviour udonBehaviour, bool newState)>();
@@ -49,9 +72,23 @@ namespace VRC.Udon
         private readonly Queue<(UdonBehaviour udonBehaviour, bool newState)> _fixedUpdateUdonBehavioursRegistrationQueue
             = new Queue<(UdonBehaviour udonBehaviour, bool newState)>();
 
+        #endregion
+
+        #region Private Input Data
+
+        private readonly Dictionary<string, HashSet<UdonBehaviour>> _inputUdonBehaviours =
+            new Dictionary<string, HashSet<UdonBehaviour>>();
+
         private readonly Queue<(UdonBehaviour udonBehaviour, string udonEventName, bool newState)>
             _inputUpdateUdonBehavioursRegistrationQueue =
                 new Queue<(UdonBehaviour udonBehaviour, string udonEventName, bool newState)>();
+
+        #endregion
+
+        #region Constants
+
+        [PublicAPI]
+        public const string UDON_EVENT_ONPLAYERRESPAWN = "_onPlayerRespawn";
 
         #region Input Actions and Axes
 
@@ -68,57 +105,42 @@ namespace VRC.Udon
         };
 
         // Buttons
+        [PublicAPI]
         public const string UDON_INPUT_JUMP = "_inputJump";
+
+        [PublicAPI]
         public const string UDON_INPUT_USE = "_inputUse";
+
+        [PublicAPI]
         public const string UDON_INPUT_GRAB = "_inputGrab";
+
+        [PublicAPI]
         public const string UDON_INPUT_DROP = "_inputDrop";
 
         // Axes
+        [PublicAPI]
         public const string UDON_MOVE_VERTICAL = "_inputMoveVertical";
+
+        [PublicAPI]
         public const string UDON_MOVE_HORIZONTAL = "_inputMoveHorizontal";
+
+        [PublicAPI]
         public const string UDON_LOOK_VERTICAL = "_inputLookVertical";
+
+        [PublicAPI]
         public const string UDON_LOOK_HORIZONTAL = "_inputLookHorizontal";
 
         #endregion
 
-        [PublicAPI]
-        public static UdonManager Instance
-        {
-            get
-            {
-#if !VRC_CLIENT
-                if (_instance != null)
-                {
-                    return _instance;
-                }
+        #endregion
 
-                GameObject udonManagerGameObject = new GameObject("UdonManager");
-                DontDestroyOnLoad(udonManagerGameObject);
-                _instance = udonManagerGameObject.AddComponent<UdonManager>();
-#endif
+        private readonly IUdonClientInterface _udonClientInterface = new UdonClientInterface();
+        private UdonTimeSource _udonTimeSource;
+        private IUdonEventScheduler _udonEventScheduler;
 
-                return _instance;
-            }
-        }
+        #region SDK Only Methods
 
-        private IUdonClientInterface _udonClientInterface;
-
-        private IUdonClientInterface UdonClientInterface
-        {
-            get
-            {
-                if (_udonClientInterface != null)
-                {
-                    return _udonClientInterface;
-                }
-
-                _udonClientInterface = new UdonClientInterface();
-
-                return _udonClientInterface;
-            }
-        }
-
-#if !VRC_CLIENT
+        #if !VRC_CLIENT
         [RuntimeInitializeOnLoadMethod]
         private static void Initialize()
         {
@@ -143,38 +165,24 @@ namespace VRC.Udon
                 }
             }
         }
-#endif
+        #endif
 
-        public void RegisterInput(UdonBehaviour udonBehaviour, string udonEventName, bool doRegister)
-        {
-            _inputUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, udonEventName, doRegister));
-        }
+        #endregion
 
-        public void RunInputAction(string inputEvent, UdonInputEventArgs args)
-        {
-            if (_inputUdonBehaviours.TryGetValue(inputEvent, out HashSet<UdonBehaviour> udonBehaviours))
-            {
-                foreach (UdonBehaviour udonBehaviour in udonBehaviours)
-                {
-                    // Easier to check here than adding / removing from lookup
-                    if (udonBehaviour.enabled)
-                        udonBehaviour.RunInputEvent(inputEvent, args);
-                }
-            }
-        }
+        #region Unity Event Methods
 
         public void Awake()
         {
-            if (_instance == null)
+            if(_instance == null)
             {
                 _instance = this;
             }
 
             DebugLogging = Application.isEditor;
 
-            if (Instance != this)
+            if(Instance != this)
             {
-                if (Application.isPlaying)
+                if(Application.isPlaying)
                 {
                     Destroy(this);
                 }
@@ -186,13 +194,15 @@ namespace VRC.Udon
                 return;
             }
 
-            if (!Application.isPlaying)
+            _udonTimeSource = new UdonTimeSource();
+            _udonEventScheduler = new UdonEventScheduler(_udonTimeSource);
+            if(!Application.isPlaying)
             {
                 return;
             }
 
-            PrimitiveType[] primitiveTypes = (PrimitiveType[]) Enum.GetValues(typeof(PrimitiveType));
-            foreach (PrimitiveType primitiveType in primitiveTypes)
+            PrimitiveType[] primitiveTypes = (PrimitiveType[])Enum.GetValues(typeof(PrimitiveType));
+            foreach(PrimitiveType primitiveType in primitiveTypes)
             {
                 GameObject go = GameObject.CreatePrimitive(primitiveType);
                 Mesh primitiveMesh = go.GetComponent<MeshFilter>().sharedMesh;
@@ -215,10 +225,12 @@ namespace VRC.Udon
 
         private void Update()
         {
+            _udonTimeSource.UpdateTime(Time.deltaTime);
+
             bool anyNull = false;
-            foreach (UdonBehaviour udonBehaviour in _updateUdonBehaviours)
+            foreach(UdonBehaviour udonBehaviour in _updateUdonBehaviours)
             {
-                if (udonBehaviour == null)
+                if(udonBehaviour == null)
                 {
                     anyNull = true;
                     continue;
@@ -227,10 +239,10 @@ namespace VRC.Udon
                 udonBehaviour.ManagedUpdate();
             }
 
-            while (_updateUdonBehavioursRegistrationQueue.Count > 0)
+            while(_updateUdonBehavioursRegistrationQueue.Count > 0)
             {
                 (UdonBehaviour udonBehaviour, bool newState) = _updateUdonBehavioursRegistrationQueue.Dequeue();
-                if (newState)
+                if(newState)
                 {
                     _updateUdonBehaviours.Add(udonBehaviour);
                 }
@@ -240,28 +252,130 @@ namespace VRC.Udon
                 }
             }
 
-            if (anyNull)
+            if(anyNull)
             {
                 _updateUdonBehaviours.RemoveWhere(o => o == null);
             }
 
             UpdateInputQueue();
+            _udonEventScheduler.RunScheduledEvents(EventTiming.Update);
+        }
+
+        private void LateUpdate()
+        {
+            bool anyNull = false;
+            foreach(UdonBehaviour udonBehaviour in _lateUpdateUdonBehaviours)
+            {
+                if(udonBehaviour == null)
+                {
+                    anyNull = true;
+                    continue;
+                }
+
+                udonBehaviour.ManagedLateUpdate();
+            }
+
+            while(_lateUpdateUdonBehavioursRegistrationQueue.Count > 0)
+            {
+                (UdonBehaviour udonBehaviour, bool newState) = _lateUpdateUdonBehavioursRegistrationQueue.Dequeue();
+                if(newState)
+                {
+                    _lateUpdateUdonBehaviours.Add(udonBehaviour);
+                }
+                else
+                {
+                    _lateUpdateUdonBehaviours.Remove(udonBehaviour);
+                }
+            }
+
+            if(anyNull)
+            {
+                _lateUpdateUdonBehaviours.RemoveWhere(o => o == null);
+            }
+
+            _udonEventScheduler.RunScheduledEvents(EventTiming.LateUpdate);
+        }
+
+        private void FixedUpdate()
+        {
+            bool anyNull = false;
+            foreach(UdonBehaviour udonBehaviour in _fixedUpdateUdonBehaviours)
+            {
+                if(udonBehaviour == null)
+                {
+                    anyNull = true;
+                    continue;
+                }
+
+                udonBehaviour.ManagedFixedUpdate();
+            }
+
+            while(_fixedUpdateUdonBehavioursRegistrationQueue.Count > 0)
+            {
+                (UdonBehaviour udonBehaviour, bool newState) = _fixedUpdateUdonBehavioursRegistrationQueue.Dequeue();
+                if(newState)
+                {
+                    _fixedUpdateUdonBehaviours.Add(udonBehaviour);
+                }
+                else
+                {
+                    _fixedUpdateUdonBehaviours.Remove(udonBehaviour);
+                }
+            }
+
+            if(anyNull)
+            {
+                _fixedUpdateUdonBehaviours.RemoveWhere(o => o == null);
+            }
+        }
+
+        #endregion
+
+        #region Input Methods
+
+        [PublicAPI]
+        public void RegisterInput(UdonBehaviour udonBehaviour, string udonEventName, bool doRegister)
+        {
+            _inputUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, udonEventName, doRegister));
+        }
+
+        [PublicAPI]
+        public void RunInputAction(string inputEvent, UdonInputEventArgs args)
+        {
+            if(!_inputUdonBehaviours.TryGetValue(inputEvent, out HashSet<UdonBehaviour> udonBehaviours))
+            {
+                return;
+            }
+
+            foreach(UdonBehaviour udonBehaviour in udonBehaviours)
+            {
+                // Easier to check here than adding / removing from lookup
+                if(udonBehaviour.enabled)
+                {
+                    udonBehaviour.RunInputEvent(inputEvent, args);
+                }
+            }
         }
 
         private void UpdateInputQueue()
         {
-            while (_inputUpdateUdonBehavioursRegistrationQueue.Count > 0)
+            while(_inputUpdateUdonBehavioursRegistrationQueue.Count > 0)
             {
                 // Get next item in queue
                 (UdonBehaviour udonBehaviour, string eventName, bool newState) =
                     _inputUpdateUdonBehavioursRegistrationQueue.Dequeue();
+
                 // Skip if this is not an input event
-                if (!(_inputActionNames.Contains(eventName))) continue;
+                if(!(_inputActionNames.Contains(eventName)))
+                {
+                    continue;
+                }
+
                 // Needs to be added to lookup
-                if (newState)
+                if(newState)
                 {
                     // Add to existing set
-                    if (_inputUdonBehaviours.TryGetValue(eventName, out HashSet<UdonBehaviour> udonBehaviours))
+                    if(_inputUdonBehaviours.TryGetValue(eventName, out HashSet<UdonBehaviour> udonBehaviours))
                     {
                         udonBehaviours.Add(udonBehaviour);
                     }
@@ -274,7 +388,7 @@ namespace VRC.Udon
                 // Needs to be removed from lookup
                 else
                 {
-                    if (_inputUdonBehaviours.TryGetValue(eventName, out HashSet<UdonBehaviour> udonBehaviours))
+                    if(_inputUdonBehaviours.TryGetValue(eventName, out HashSet<UdonBehaviour> udonBehaviours))
                     {
                         udonBehaviours.Remove(udonBehaviour);
                     }
@@ -282,89 +396,28 @@ namespace VRC.Udon
             }
         }
 
-        private void LateUpdate()
-        {
-            bool anyNull = false;
-            foreach (UdonBehaviour udonBehaviour in _lateUpdateUdonBehaviours)
-            {
-                if (udonBehaviour == null)
-                {
-                    anyNull = true;
-                    continue;
-                }
+        #endregion
 
-                udonBehaviour.ManagedLateUpdate();
-            }
-
-            while (_lateUpdateUdonBehavioursRegistrationQueue.Count > 0)
-            {
-                (UdonBehaviour udonBehaviour, bool newState) = _lateUpdateUdonBehavioursRegistrationQueue.Dequeue();
-                if (newState)
-                {
-                    _lateUpdateUdonBehaviours.Add(udonBehaviour);
-                }
-                else
-                {
-                    _lateUpdateUdonBehaviours.Remove(udonBehaviour);
-                }
-            }
-
-            if (anyNull)
-            {
-                _lateUpdateUdonBehaviours.RemoveWhere(o => o == null);
-            }
-        }
-
-        private void FixedUpdate()
-        {
-            bool anyNull = false;
-            foreach (UdonBehaviour udonBehaviour in _fixedUpdateUdonBehaviours)
-            {
-                if (udonBehaviour == null)
-                {
-                    anyNull = true;
-                    continue;
-                }
-
-                udonBehaviour.ManagedFixedUpdate();
-            }
-
-            while (_fixedUpdateUdonBehavioursRegistrationQueue.Count > 0)
-            {
-                (UdonBehaviour udonBehaviour, bool newState) = _fixedUpdateUdonBehavioursRegistrationQueue.Dequeue();
-                if (newState)
-                {
-                    _fixedUpdateUdonBehaviours.Add(udonBehaviour);
-                }
-                else
-                {
-                    _fixedUpdateUdonBehaviours.Remove(udonBehaviour);
-                }
-            }
-
-            if (anyNull)
-            {
-                _fixedUpdateUdonBehaviours.RemoveWhere(o => o == null);
-            }
-        }
+        #region Scene Load Methods
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
-            if (loadSceneMode == LoadSceneMode.Single)
+            if(loadSceneMode == LoadSceneMode.Single)
             {
                 _sceneUdonBehaviourDirectories.Clear();
             }
 
             Dictionary<GameObject, HashSet<UdonBehaviour>> sceneUdonBehaviourDirectory =
                 new Dictionary<GameObject, HashSet<UdonBehaviour>>();
+
             List<Transform> transformsTempList = new List<Transform>();
-            foreach (GameObject rootGameObject in scene.GetRootGameObjects())
+            foreach(GameObject rootGameObject in scene.GetRootGameObjects())
             {
                 rootGameObject.GetComponentsInChildren(true, transformsTempList);
-                foreach (Transform currentTransform in transformsTempList)
+                foreach(Transform currentTransform in transformsTempList)
                 {
                     List<UdonBehaviour> currentGameObjectUdonBehaviours = new List<UdonBehaviour>();
-                    foreach (UdonBehaviour udonBehaviour in currentGameObjectUdonBehaviours)
+                    foreach(UdonBehaviour udonBehaviour in currentGameObjectUdonBehaviours)
                     {
                         udonBehaviour.InitializeUdonContent();
                     }
@@ -372,21 +425,23 @@ namespace VRC.Udon
                     GameObject currentGameObject = currentTransform.gameObject;
                     currentGameObject.GetComponents(currentGameObjectUdonBehaviours);
 
-                    if (currentGameObjectUdonBehaviours.Count > 0)
+                    if(currentGameObjectUdonBehaviours.Count > 0)
                     {
-                        sceneUdonBehaviourDirectory.Add(currentGameObject,
+                        sceneUdonBehaviourDirectory.Add(
+                            currentGameObject,
                             new HashSet<UdonBehaviour>(currentGameObjectUdonBehaviours));
                     }
                 }
             }
 
-            if (!_isUdonEnabled)
+            if(!_isUdonEnabled)
             {
                 Logger.LogWarning(
                     "Udon is disabled globally, Udon components will be removed from the scene.");
-                foreach (HashSet<UdonBehaviour> udonBehaviours in sceneUdonBehaviourDirectory.Values)
+
+                foreach(HashSet<UdonBehaviour> udonBehaviours in sceneUdonBehaviourDirectory.Values)
                 {
-                    foreach (UdonBehaviour udonBehaviour in udonBehaviours)
+                    foreach(UdonBehaviour udonBehaviour in udonBehaviours)
                     {
                         Destroy(udonBehaviour);
                     }
@@ -398,9 +453,9 @@ namespace VRC.Udon
             _sceneUdonBehaviourDirectories.Add(scene, sceneUdonBehaviourDirectory);
 
             // Initialize all UdonBehaviours in the scene so their Public Variables are populated.
-            foreach (HashSet<UdonBehaviour> udonBehaviourList in sceneUdonBehaviourDirectory.Values)
+            foreach(HashSet<UdonBehaviour> udonBehaviourList in sceneUdonBehaviourDirectory.Values)
             {
-                foreach (UdonBehaviour udonBehaviour in udonBehaviourList)
+                foreach(UdonBehaviour udonBehaviour in udonBehaviourList)
                 {
                     // All UdonBehaviours that exist in the scene get networking setup automatically.
                     udonBehaviour.IsNetworkingSupported = true;
@@ -409,40 +464,37 @@ namespace VRC.Udon
             }
         }
 
-        internal void RegisterUdonBehaviourUpdate(UdonBehaviour udonBehaviour)
-        {
-            _updateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, true));
-        }
-
-        internal void RegisterUdonBehaviourLateUpdate(UdonBehaviour udonBehaviour)
-        {
-            _lateUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, true));
-        }
-
-        internal void RegisterUdonBehaviourFixedUpdate(UdonBehaviour udonBehaviour)
-        {
-            _fixedUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, true));
-        }
-
-        internal void UnregisterUdonBehaviourUpdate(UdonBehaviour udonBehaviour)
-        {
-            _updateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, false));
-        }
-
-        internal void UnregisterUdonBehaviourLateUpdate(UdonBehaviour udonBehaviour)
-        {
-            _lateUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, false));
-        }
-
-        internal void UnregisterUdonBehaviourFixedUpdate(UdonBehaviour udonBehaviour)
-        {
-            _fixedUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, false));
-        }
-
         private void OnSceneUnloaded(Scene scene)
         {
             _sceneUdonBehaviourDirectories.Remove(scene);
         }
+
+        #endregion
+
+        #region Update Registration Methods
+
+        internal void RegisterUdonBehaviourUpdate(UdonBehaviour udonBehaviour) => _updateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, true));
+        internal void RegisterUdonBehaviourLateUpdate(UdonBehaviour udonBehaviour) => _lateUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, true));
+        internal void RegisterUdonBehaviourFixedUpdate(UdonBehaviour udonBehaviour) => _fixedUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, true));
+        internal void UnregisterUdonBehaviourUpdate(UdonBehaviour udonBehaviour) => _updateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, false));
+        internal void UnregisterUdonBehaviourLateUpdate(UdonBehaviour udonBehaviour) => _lateUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, false));
+        internal void UnregisterUdonBehaviourFixedUpdate(UdonBehaviour udonBehaviour) => _fixedUpdateUdonBehavioursRegistrationQueue.Enqueue((udonBehaviour, false));
+
+        #endregion
+
+        #region Event Scheduler Methods
+
+        [PublicAPI]
+        public void ScheduleDelayedEvent(IUdonEventReceiver eventReceiver, string eventName, float delaySeconds, EventTiming eventTiming) =>
+            _udonEventScheduler.ScheduleDelayedSecondsEvent(eventReceiver, eventName, delaySeconds, eventTiming);
+
+        [PublicAPI]
+        public void ScheduleDelayedEvent(IUdonEventReceiver eventReceiver, string eventName, int delayFrames, EventTiming eventTiming) =>
+            _udonEventScheduler.ScheduleDelayedFramesEvent(eventReceiver, eventName, delayFrames, eventTiming);
+
+        #endregion
+
+        #region Control Methods
 
         [PublicAPI]
         public void SetUdonEnabled(bool isEnabled)
@@ -450,65 +502,78 @@ namespace VRC.Udon
             _isUdonEnabled = isEnabled;
         }
 
+        #endregion
+
+        #region IUdonClientInterface Methods
+
+        public bool DebugLogging
+        {
+            get => _udonClientInterface.DebugLogging;
+            set => _udonClientInterface.DebugLogging = value;
+        }
+
         public IUdonVM ConstructUdonVM()
         {
-            return !_isUdonEnabled ? null : UdonClientInterface.ConstructUdonVM();
+            return !_isUdonEnabled ? null : _udonClientInterface.ConstructUdonVM();
         }
 
         public void FilterBlacklisted<T>(ref T objectToFilter) where T : class
         {
-            UdonClientInterface.FilterBlacklisted(ref objectToFilter);
+            _udonClientInterface.FilterBlacklisted(ref objectToFilter);
         }
-
 
         public void Blacklist(Object objectToBlacklist)
         {
-            UdonClientInterface.Blacklist(objectToBlacklist);
+            _udonClientInterface.Blacklist(objectToBlacklist);
         }
 
         public void Blacklist(IEnumerable<Object> objectsToBlacklist)
         {
-            UdonClientInterface.Blacklist(objectsToBlacklist);
+            _udonClientInterface.Blacklist(objectsToBlacklist);
         }
 
         public void FilterBlacklisted(ref Object objectToFilter)
         {
-            UdonClientInterface.FilterBlacklisted(ref objectToFilter);
+            _udonClientInterface.FilterBlacklisted(ref objectToFilter);
         }
 
         public bool IsBlacklisted(Object objectToCheck)
         {
-            return UdonClientInterface.IsBlacklisted(objectToCheck);
+            return _udonClientInterface.IsBlacklisted(objectToCheck);
         }
 
         public void ClearBlacklist()
         {
-            UdonClientInterface.ClearBlacklist();
+            _udonClientInterface.ClearBlacklist();
         }
 
         public bool IsBlacklisted<T>(T objectToCheck)
         {
-            return UdonClientInterface.IsBlacklisted(objectToCheck);
+            return _udonClientInterface.IsBlacklisted(objectToCheck);
         }
 
         public IUdonWrapper GetWrapper()
         {
-            return UdonClientInterface.GetWrapper();
+            return _udonClientInterface.GetWrapper();
         }
+
+        #endregion
 
         [PublicAPI]
         public void RegisterUdonBehaviour(UdonBehaviour udonBehaviour)
         {
             GameObject udonBehaviourGameObject = udonBehaviour.gameObject;
             Scene udonBehaviourScene = udonBehaviourGameObject.scene;
-            if (!_sceneUdonBehaviourDirectories.TryGetValue(udonBehaviourScene,
+            if(!_sceneUdonBehaviourDirectories.TryGetValue(
+                udonBehaviourScene,
                 out Dictionary<GameObject, HashSet<UdonBehaviour>> sceneUdonBehaviourDirectory))
             {
                 sceneUdonBehaviourDirectory = new Dictionary<GameObject, HashSet<UdonBehaviour>>();
                 _sceneUdonBehaviourDirectories.Add(udonBehaviourScene, sceneUdonBehaviourDirectory);
             }
 
-            if (sceneUdonBehaviourDirectory.TryGetValue(udonBehaviourGameObject,
+            if(sceneUdonBehaviourDirectory.TryGetValue(
+                udonBehaviourGameObject,
                 out HashSet<UdonBehaviour> gameObjectUdonBehaviours))
             {
                 gameObjectUdonBehaviours.Add(udonBehaviour);
@@ -522,18 +587,20 @@ namespace VRC.Udon
             udonBehaviour.InitializeUdonContent();
         }
 
+        #region Global RunEvent Methods
+
         //Run an udon event on all objects
         [PublicAPI]
         public void RunEvent(string eventName, params (string symbolName, object value)[] programVariables)
         {
-            foreach (Dictionary<GameObject, HashSet<UdonBehaviour>> sceneUdonBehaviourDirectory in
+            foreach(Dictionary<GameObject, HashSet<UdonBehaviour>> sceneUdonBehaviourDirectory in
                 _sceneUdonBehaviourDirectories.Values)
             {
-                foreach (HashSet<UdonBehaviour> udonBehaviourList in sceneUdonBehaviourDirectory.Values)
+                foreach(HashSet<UdonBehaviour> udonBehaviourList in sceneUdonBehaviourDirectory.Values)
                 {
-                    foreach (UdonBehaviour udonBehaviour in udonBehaviourList)
+                    foreach(UdonBehaviour udonBehaviour in udonBehaviourList)
                     {
-                        if (udonBehaviour != null)
+                        if(udonBehaviour != null)
                         {
                             udonBehaviour.RunEvent(eventName, programVariables);
                         }
@@ -547,46 +614,47 @@ namespace VRC.Udon
         public void RunEvent(GameObject eventReceiverObject, string eventName,
             params (string symbolName, object value)[] programVariables)
         {
-            if (!_sceneUdonBehaviourDirectories.TryGetValue(eventReceiverObject.scene,
+            if(!_sceneUdonBehaviourDirectories.TryGetValue(
+                eventReceiverObject.scene,
                 out Dictionary<GameObject, HashSet<UdonBehaviour>> sceneUdonBehaviourDirectory))
             {
                 return;
             }
 
-            if (!sceneUdonBehaviourDirectory.TryGetValue(eventReceiverObject,
+            if(!sceneUdonBehaviourDirectory.TryGetValue(
+                eventReceiverObject,
                 out HashSet<UdonBehaviour> eventReceiverBehaviourList))
             {
                 return;
             }
 
-            foreach (UdonBehaviour udonBehaviour in eventReceiverBehaviourList)
+            foreach(UdonBehaviour udonBehaviour in eventReceiverBehaviourList)
             {
                 udonBehaviour.RunEvent(eventName, programVariables);
             }
         }
 
-        public bool DebugLogging
-        {
-            get => UdonClientInterface.DebugLogging;
-            set => UdonClientInterface.DebugLogging = value;
-        }
+        #endregion
+
+
+        #region Helper Classes
 
         private class UpdateOrderComparer : IComparer<UdonBehaviour>
         {
             public int Compare(UdonBehaviour x, UdonBehaviour y)
             {
-                if (x == null)
+                if(x == null)
                 {
                     return y != null ? -1 : 0;
                 }
 
-                if (y == null)
+                if(y == null)
                 {
                     return 1;
                 }
 
                 int updateOrderComparison = x.UpdateOrder.CompareTo(y.UpdateOrder);
-                if (updateOrderComparison != 0)
+                if(updateOrderComparison != 0)
                 {
                     return updateOrderComparison;
                 }
@@ -594,5 +662,22 @@ namespace VRC.Udon
                 return x.GetInstanceID().CompareTo(y.GetInstanceID());
             }
         }
+
+
+        private class UdonTimeSource : IUdonEventSchedulerTimeSource
+        {
+            public double CurrentTime { get; private set; } = 0;
+            public long CurrentFrame { get; private set; } = 0;
+
+            public float MinimumDelay => 0.001f;
+
+            public void UpdateTime(float deltaTime)
+            {
+                CurrentTime += deltaTime;
+                CurrentFrame++;
+            }
+        }
+
+        #endregion
     }
 }
