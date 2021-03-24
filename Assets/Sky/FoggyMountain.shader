@@ -7,16 +7,19 @@
         _BaseSeed ("Noise Seed", Float ) = 20.
         _CloudAlt ("Cloud Fequency", Float ) = 100.0
         _CloudFactor ("Cloud Factor", Float ) = 0.00002
+        _CloudFactor2 ("Cloud Factor2", Float ) = 0.00009
         _CloudSpeed ("Cloud Speed", Float ) = 50.
+        _CloudOffset ("Cloud Offset", Float ) = .3
         _G1 ("Ground Factor1", Float ) = 0.00005
         _G2 ("Ground Factor2", Float ) = 10.0
         _G3 ("Mountain Height", Float ) = 40.0
         _G4 ("Ground Factor4", Float ) = 0.01
+        _FogFactor ("Fog Factor", Float) = 0.0002
         _CamHeight ("Camera Height", Float) = 500.0
         _GroundColor ("Ground Color", Color) = (.3,.3,.3,1) 
         _SkyColor ("Sky Color", Color) = (0.1,.30,0.1,1) 
         _SunColor ("Sun Color", Color) = (0.1,.30,0.1,1) 
-        _CloudColor ("Cloud Color", Color) = (0.70,0.72,0.70,1)
+        _AmbYOffset ("Ambient YOffset", Float) = 30.
         _SunLat ("Sun Lat", Range (-1.0,1.)) = 0.5 // sliders 
         _SunHeight ("Sun Height", Range (-10,1.)) = 0.5 // sliders 
     }
@@ -49,10 +52,14 @@
             float _BaseSeed;
             float _CloudAlt;
             float _CloudFactor;
+            float _CloudFactor2;
             float _CloudSpeed;
+            float _CloudOffset;
+            float _FogFactor;
             float _G1,_G2,_G3,_G4;
             float _CamHeight;
-            float4 _GroundColor,_SkyColor,_SunColor,_CloudColor;
+            float4 _GroundColor,_SkyColor,_SunColor;
+            float _AmbYOffset;
             float _SunLat,_SunHeight;
 
          // Use mouse to control the camera & time.
@@ -78,7 +85,7 @@
             float a = 0.0;
             for(float i=1.0;i<3.0;i++){
                 a += noise(p)/i;
-                p = p*2.0 + float3(0.0,a*0.001/i,a*0.0001/i);
+                p = p*2.0 + float3(0.0,a*0.001/(i*2.),a*0.0001/(i*2.));
             }
             return a;
         }
@@ -92,7 +99,7 @@
 //            return base(p)+noises(p.zxy*0.00005+10.0)*40.0*(0.0-p.y*0.01)+p.y;
 
             return base(p)+noises(p.zxy*_G1+_G2)*_G3*(0.0-p.y*_G4)+p.y;
-            //return base(p)+noises(float3(p.xz,0.)*_G1+_G2)*_G3)*(0.0-p.y*_G4);//+p.y;
+            
         }
 
         float clouds( in float3 p){
@@ -100,7 +107,7 @@
             p.y += b*0.5/abs(p.y) + _CloudAlt;
 
         //    return noises(float3(p.x*0.3+((time+iMouse.y)*30.0),p.y,p.z)*0.00002)-max(p.y,0.0)*0.00009;
-            return noises(float3(p.x*0.3+((time)*_CloudSpeed),p.y,p.z)*_CloudFactor)-max(p.y,0.0)*0.00009;
+            return noises(float3(p.x*_CloudOffset+((time)*_CloudSpeed),p.y,p.z)*_CloudFactor)-max(p.y,0.5)*_CloudFactor2;
         }
 
             
@@ -138,7 +145,7 @@
 
                 float3 finalColor;
 
-                time        = _Time.y*5.0+floor(_Time.y*0.1)*150.0;
+                time        = _Time.y*5.0;//+floor(_Time.y*0.1)*150.0;
                 //time = 0.;
                 float2 uv     = i.vertex.xy; 
                 float3 campos  = worldPos;
@@ -164,15 +171,21 @@
 
                 float l     = sin(dot(ray,sun));
                 float3  light = float3(l,0.0,-l)+ray.y*0.2;
+
                 
+                // ambientLight  = p1(along ray)+AmbYOffset + sunVector*10 
 //                float amb = smoothstep(-100.0,100.0,ground(p1+float3(0.0,30.0,0.0)+sun*10.0))-smoothstep(1000.0,-0.0,p1.y)*0.7;
-                float amb = smoothstep(-100.0,100.0,ground(p1+float3(_CloudColor.xyz)+sun*10.0))-smoothstep(1000.0,-0.0,p1.y)*0.7;
+                float amb = smoothstep(-100.0,100.0,ground(p1+float3(0.0 ,_AmbYOffset, 0.0)+sun*10.0))-smoothstep(1000.0,-0.0,p1.y)*0.7;
+
+                // groundColor = DefaultGroundTint + sinNoise + positionNoise + AmbientLight + directLight 
 //                float3  ground = float3(0.10,0.20,0.15)+sin(p1*0.001)*0.01+noise(float3(p1*0.02))*0.1+amb*0.7+light*0.01;
-                float3  ground = float3(_GroundColor.xyz)+sin(p1*0.001)*0.01+noise(float3(p1*0.02))*0.1+amb*0.7+light*0.01;
+//                float3  ground = float3(_GroundColor.xyz)+sin(p1*0.001)*0.01+noise(float3(p1*0.01))*0.1+amb*0.7+light*0.01;
+                float3  ground = float3(_GroundColor.xyz)+amb*0.7+light*0.01;
                     
                 float f = smoothstep(0.0,800.0,fog);
 //                float3  cloud = float3(0.70,0.72,0.70)+light*0.05+sin(fog*0.0002)*0.2+noise(p1)*0.05;
-                float3  cloud = float3(_SkyColor.xyz)+light*0.05+sin(fog*0.0002)*0.2+noise(p1)*0.05;
+//                float3  cloud = float3(_SkyColor.xyz)+light*0.05+sin(fog*_FogFactor)*0.2+noise(p1)*0.05;
+                float3  cloud = float3(_SkyColor.xyz);//+light*0.05*0.2+noise(p1)*0.05;
 
                 float ht = smoothstep(10000.,40000.0,dist);
                 float3  sky = (ray.y*0.1-0.02)+cloud;   
@@ -181,8 +194,13 @@
                 float4 fragColor; //= float4(finalColor.xyz,1.0);
            //     fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f)-dot(uv,uv)*0.1)),1.0);
            //     fragColor = float4(lerp(ground,sky,ht),1.0);
+           //     fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f))-noise(ray)*.01),1.0);
+
+//           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(ground,sky,ht))-noise(ray)*.01),1.0);
+           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(ground,sky,ht))),1.0);
+
 //           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f))-noise(ray)*.01),1.0);
-           fragColor = float4(sqrt(smoothstep(0.2,1.0,lerp(lerp(ground,sky,ht),cloud,f))),1.0);
+
            //     fragColor = float4(noises(rd),noises(rd),noises(rd),1.);
                 return fragColor;
                 
