@@ -34,9 +34,7 @@
 
             #pragma vertex vert
             #pragma fragment frag
-            #define UNITY_PASS_FORWARDBASE
             #include "UnityCG.cginc"
-            #pragma multi_compile_fwdbase_fullshadows
             #pragma only_renderers d3d9 d3d11 glcore gles n3ds wiiu 
             #pragma target 3.0
 
@@ -46,7 +44,7 @@
             #include "UnityCG.cginc"
 
             SamplerState my_point_clamp_sampler;
-            sampler2D _MainTex;
+            uniform sampler2D _MainTex;
 //            Texture2D _MainTex;
             float _BaseAlt;
             float _BaseSeed;
