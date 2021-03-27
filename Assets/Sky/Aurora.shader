@@ -64,18 +64,18 @@
                 float4 col = float4(0,0,0,0);
                 float4 avgCol = float4(0,0,0,0);
                 
-                for(float i=0.;i<50.;i++)
+                for(float i=0.;i<25.;i++)
                 {
-                    float of = 0.006*hash21(uv)*smoothstep(0.,15., i);
-                    float pt = ((.8+pow(i,1.4)*.002)+ro.y*.001)/(rd.y*2.+0.4);
+                    float of = 0.006*hash21(uv)*smoothstep(0.,15., i*2);
+                    float pt = ((.8+pow(i*2,1.4)*.002)+ro.y*.001)/(rd.y*2.+0.4);
                     pt -= of;
                     float3 bpos = ro + mul(pt,rd);
                     float2 p = bpos.zx;
                     float rzt = triNoise2d(p, 0.06);
                     float4 col2 = float4(0,0,0, rzt);
-                    col2.rgb = (sin(1.-float3(2.15,-.5, 1.2)+i*0.043)*0.5+0.5)*rzt;
+                    col2.rgb = (sin(1.-float3(2.15,-.5, 1.2)+i*2*0.043)*0.5+0.5)*rzt;
                     avgCol =  lerp(avgCol, col2, .5);
-                    col += avgCol*exp2(-i*0.065 - 2.5)*smoothstep(0.,5., i);
+                    col += avgCol*exp2(-i*2*0.065 - 2.5)*smoothstep(0.,5., i);
                     
                 }
                 
@@ -104,7 +104,7 @@
                 float3 c = float3(0.,0.,0.);
                 float res = 1000.; //iResolution.x*1.;
                 
-                for (float i=0.;i<4.;i++)
+                for (float i=0.;i<2.;i++)
                 {
                     float3 q = frac(p*(.15*res))-0.5;
                     float3 id = floor(p*(.15*res));
@@ -119,10 +119,11 @@
 
             float3 bg(in float3 rd)
             {
-                float sd = dot(normalize(float3(-0.5, -0.6, 0.9)), rd)*0.5+0.5;
-                sd = pow(sd, 5.);
-                float3 col = lerp(float3(0.05,0.1,0.2), float3(0.1,0.05,0.2), sd);
-                return col*.63;
+            return 0;
+             //   float sd = dot(normalize(float3(-0.5, -0.6, 0.9)), rd)*0.5+0.5;
+             //   sd = pow(sd, 5.);
+             //   float3 col = lerp(float3(0.05,0.1,0.2), float3(0.1,0.05,0.2), sd);
+             //   return col*.63;
             }
 
 

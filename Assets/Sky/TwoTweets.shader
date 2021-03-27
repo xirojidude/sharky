@@ -1,4 +1,5 @@
-﻿Shader "Skybox/Aurora2"
+﻿
+Shader "Skybox/TwoTweets"
 {
     Properties
     {
@@ -41,28 +42,30 @@
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
-                // float3 worldPosition = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz;
-                // o.cameraRelativeWorldPosition = worldPosition - _WorldSpaceCameraPos.xyz;
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
-            {
- 
-
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // fixed4 col = texCUBE(_CubeMap, i.cameraRelativeWorldPosition)
-
-                if (i.uv.x > 0.0 && i.uv.x < 0.01  || i.uv.y > 0.0 && i.uv.y < 0.01) col.rb = 0.;
-                float xx = (i.uv.x) % 0.02;
-                if ( xx > -0.001 && xx < 0.001) col.g = 0.;
-                //if (i.uv.z > 0.0 && i.uv.z < 0.01) col.rb = 0.;
-                
-                // apply fog
-//                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
+            float f(float3 p) 
+            { 
+                p.z+=_Time.y;
+                return length(.05*cos(9.*p.y*p.x)+cos(p)-.1*cos(9.*(p.z+.3*p.x-p.y)))-1.; 
             }
+
+            fixed4 frag (v2f v) : SV_Target
+            {
+                float2 p = v.vertex;
+                float4 c = float4(0.,0.,0.,1.);
+
+                float3 d=.5-float3(p,1)/800.0,o=d;for(int i=0;i<128;i++)o+=f(o)*d;
+                c.xyz = abs(f(o-d)*float3(0,1,2)+f(o-.6)*float3(2,1,0))*(1.-.1*o.z);
+                
+                return c;
+            }
+
+
+
+
+
             ENDCG
         }
     }

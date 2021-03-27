@@ -1,4 +1,5 @@
-﻿Shader "Skybox/Aurora2"
+﻿
+Shader "Skybox/CubeScape"
 {
     Properties
     {
@@ -41,28 +42,37 @@
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
-                // float3 worldPosition = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz;
-                // o.cameraRelativeWorldPosition = worldPosition - _WorldSpaceCameraPos.xyz;
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            fixed4 frag (v2f v) : SV_Target
             {
+                float2 U = v.vertex;
+                float4 O = float4(0.,0.,0.,0.);
  
+                float l = .2;
+                float3 R = float3(800.,450.,0.),
+                     P = float3(_Time.y,3.,0.)*7.,
+                     D = float3( ( U - .5*R.xy ) / R.y + l*cos(.5*_Time.y) , 1 );
+                  // D = float3( ( U - .5*R.xy ) / R.y                   , 1 ); // 1 tweet version
+                for( D.yz = mul(D.yz,float2x2(4.,-3.,3.,4.)*l); 
+                     l > .1; 
+                     l = min( P.y - 8.* frac( sin(dot(ceil(P).xzz,R)) * 4e5 ), .11 )
+                   ) P += l*D;
+                O += P.y/P.z * length(step(.1,frac(P))) -O;
 
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // fixed4 col = texCUBE(_CubeMap, i.cameraRelativeWorldPosition)
-
-                if (i.uv.x > 0.0 && i.uv.x < 0.01  || i.uv.y > 0.0 && i.uv.y < 0.01) col.rb = 0.;
-                float xx = (i.uv.x) % 0.02;
-                if ( xx > -0.001 && xx < 0.001) col.g = 0.;
-                //if (i.uv.z > 0.0 && i.uv.z < 0.01) col.rb = 0.;
-                
-                // apply fog
-//                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
+                crash // Broken ... causes Unity to freeze up
+                return O;
             }
+
+crash
+
+
+
+
+
+
+
             ENDCG
         }
     }
