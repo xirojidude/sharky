@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Fissure
+  m_Name: Fissure 1
   m_Shader: {fileID: 4800000, guid: 392ee831f35f0474d8c62d637e913139, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -20,7 +20,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: df5641550a4ecf9458090200d5f07e6c, type: 3}
+        m_Texture: {fileID: 2800000, guid: f01f8cdc98ae69b41b5c159b1ca6230a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats: []

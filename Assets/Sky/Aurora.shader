@@ -4,6 +4,12 @@
     {
         _MainTex ("Texture", 2D) = "white" {}
          [MaterialToggle] _StereoEnabled ("Stereo Enabled", Float ) = 0
+        _SkyColor1 ("SkyColor1", Color) = (1.0,0.49,0.1,1) 
+        _SkyColor2 ("SkyColor2", Color) = (0.75,0.9,1.,1) 
+        _WaterColor1 ("WaterColor1", Color) = (0.2,0.25,0.5,1) 
+        _WaterColor2 ("WaterColor2", Color) = (0.1,0.05,0.2,1) 
+
+   
    }
     SubShader
     {
@@ -27,6 +33,7 @@
             uniform sampler2D _MainTex; 
             uniform float4 _MainTex_ST;
             uniform fixed _StereoEnabled;
+            float4 _SkyColor1,_SkyColor2,_WaterColor1,_WaterColor2;
 
 
             float2x2 rotate(in float a){ float c = cos(a), s = sin(a);return float2x2(c,s,-s,c);}
@@ -188,7 +195,7 @@
                     col = col*(1.-aur.a) + aur.rgb;
                     float3 pos = ro + ((0.5-ro.y)/rd.y)*rd;
                     float nz2 = triNoise2d(pos.xz*float2(.5,.7), 0.);
-                    col += lerp(float3(0.2,0.25,0.5)*0.08,float3(0.3,0.3,0.5)*0.7, nz2*0.4);
+                    col += lerp(float3(_WaterColor1.xyz)*0.08,float3(_WaterColor2.xyz)*0.7, nz2*0.4);
 
                 }
                 finalColor = float4(col.x,col.y,col.z, 1.);

@@ -52,11 +52,13 @@ Shader "Skybox/BigBang"
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
                 float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float2 sd = float2(rd.x / rd.z, rd.y / rd.z);
 
                 float2 R = float2(800,450);//iResolution.xy;                                            
                 for(float d,t = _Time.y*.1, i = 0. ; i > -1.; i -= .06 )              
                 {   d = frac( i -3.*t );                                           
-                    float4 c = float4( ( F - R *.5 ) / R.y *d ,i,0 ) * 28.;             
+//                    float4 c = float4( ( F - R *.5 ) / R.y *d ,i,0 ) * 28.;             
+                    float4 c = float4(  sd.x *d *.5,sd.y+i,0,0 ) * 28.;             
                     for (int j=0 ; j++ <27; )                                       
                         c.xzyw = abs( c / dot(c,c)                                  
                                 -float4( 7.-.2*sin(t) , 6.3 , .7 , 1.-cos(t/.8))/7.); 

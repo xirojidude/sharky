@@ -59,7 +59,7 @@ Shader "Skybox/Fissure"
     float4 p = float4(ro.xz,0,1/450);//,d=p,t; ////float4(w,0.,1.)/iResolution.xyxy-.5, 
     float4 d= float4(rd,1), t;
     float s = sign(d.y);
-    p.z -= _Time.y*4.;
+    p.z -= _Time.y;//*4.;
     d.y = -abs(d.y);
     for(float i = 1.5; i >0.; i-=.01)
     {

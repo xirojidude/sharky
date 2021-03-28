@@ -1,4 +1,5 @@
-﻿Shader "Unlit/NebulaPlxus"
+﻿
+Shader "Skybox/NebulaPlxus"
 {
     Properties
     {
@@ -19,40 +20,27 @@
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
             }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
-            }
-
 
 
 const float FLIGHT_SPEED = 6.0;
@@ -60,21 +48,21 @@ const float FLIGHT_SPEED = 6.0;
 const float FIELD_OF_VIEW = 1.05;
 
 
-vec3 getRayDirection(vec2 fragCoord, vec3 cameraDirection) {
-    vec2 uv = fragCoord.xy / iResolution.xy;
+float3 getRayDirection(float2 fragCoord, float3 cameraDirection) {
+    float2 uv = fragCoord.xy; // / iResolution.xy;
   
     const float screenWidth = 1.0;
     float originToScreen = screenWidth / 2.0 / tan(FIELD_OF_VIEW / 2.0);
     
-    vec3 screenCenter = originToScreen * cameraDirection;
-    vec3 baseX = normalize(cross(screenCenter, vec3(0, -1.0, 0)));
-    vec3 baseY = normalize(cross(screenCenter, baseX));
+    float3 screenCenter = originToScreen * cameraDirection;
+    float3 baseX = normalize(cross(screenCenter, float3(0, -1.0, 0)));
+    float3 baseY = normalize(cross(screenCenter, baseX));
     
-    return normalize(screenCenter + (uv.x - 0.5) * baseX + (uv.y - 0.5) * iResolution.y / iResolution.x * baseY);
+    return normalize(screenCenter + (uv.x - 0.5) * baseX + (uv.y - 0.5)); // * iResolution.y / iResolution.x * baseY);
 }
 
-vec4 getNebulaColor(vec3 globalPosition, vec3 rayDirection) {
-    vec3 color = vec3(0.0);
+float4 getNebulaColor(float3 globalPosition, float3 rayDirection) {
+    float3 color = float3(0.0,0,0);
     float spaceLeft = 1.0;
     
     const float layerDistance = 10.0;
@@ -82,34 +70,34 @@ vec4 getNebulaColor(vec3 globalPosition, vec3 rayDirection) {
     
     const int steps = 4;
     for (int i = 0; i <= steps; i++) {
-      vec3 noiseeval = globalPosition + rayDirection * ((1.0 - fract(globalPosition.z / layerDistance) + float(i)) * layerDistance / rayDirection.z);
+      float3 noiseeval = globalPosition + rayDirection * ((1.0 - frac(globalPosition.z / layerDistance) + float(i)) * layerDistance / rayDirection.z);
       noiseeval.xy += noiseeval.z;
         
         
-        float value = 0.06 * texture(iChannel0, fract(noiseeval.xy / 60.0)).r;
+        float value = 0.06 * tex2D(_MainTex, frac(noiseeval.xy / 60.0)).r;
          
         if (i == 0) {
-            value *= 1.0 - fract(globalPosition.z / layerDistance);
+            value *= 1.0 - frac(globalPosition.z / layerDistance);
         } else if (i == steps) {
-            value *= fract(globalPosition.z / layerDistance);
+            value *= frac(globalPosition.z / layerDistance);
         }
                 
-        color += spaceLeft * 2. * vec3(value, value, value) * vec3(.5, .3, 0.1);
+        color += spaceLeft * 2. * float3(value, value, value) * float3(.5, .3, 0.1);
         spaceLeft = max(0.0, spaceLeft - value * 2.0);
     }
-    return vec4(color, 1.0);
+    return float4(color, 1.0);
 }
 
 #define S(a, b, t) smoothstep(a, b, t)
 
-float distLine(vec2 p, vec2 a, vec2 b){
-  vec2 pa = p - a;
-    vec2 ba = b - a;
+float distLine(float2 p, float2 a, float2 b) {
+    float2 pa = p - a;
+    float2 ba = b - a;
     float t = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
     return length(pa - ba*t);
 }
 
-float line(vec2 p, vec2 a, vec2 b){
+float lineL(float2 p, float2 a, float2 b) {
   float d = distLine(p, a, b);
     float m = S(0.03, 0.01, d);
     float d2 =  length(a - b);
@@ -117,29 +105,29 @@ float line(vec2 p, vec2 a, vec2 b){
     return m;
 }
 
-float distTriangle(in vec2 p, in vec2 p0, in vec2 p1, in vec2 p2 )
+float distTriangle(in float2 p, in float2 p0, in float2 p1, in float2 p2 )
 {
-  vec2 e0 = p1 - p0;
-  vec2 e1 = p2 - p1;
-  vec2 e2 = p0 - p2;
+  float2 e0 = p1 - p0;
+  float2 e1 = p2 - p1;
+  float2 e2 = p0 - p2;
 
-  vec2 v0 = p - p0;
-  vec2 v1 = p - p1;
-  vec2 v2 = p - p2;
+  float2 v0 = p - p0;
+  float2 v1 = p - p1;
+  float2 v2 = p - p2;
 
-  vec2 pq0 = v0 - e0*clamp( dot(v0,e0)/dot(e0,e0), 0.0, 1.0 );
-  vec2 pq1 = v1 - e1*clamp( dot(v1,e1)/dot(e1,e1), 0.0, 1.0 );
-  vec2 pq2 = v2 - e2*clamp( dot(v2,e2)/dot(e2,e2), 0.0, 1.0 );
+  float2 pq0 = v0 - e0*clamp( dot(v0,e0)/dot(e0,e0), 0.0, 1.0 );
+  float2 pq1 = v1 - e1*clamp( dot(v1,e1)/dot(e1,e1), 0.0, 1.0 );
+  float2 pq2 = v2 - e2*clamp( dot(v2,e2)/dot(e2,e2), 0.0, 1.0 );
     
     float s = sign( e0.x*e2.y - e0.y*e2.x );
-    vec2 d = min( min( vec2( dot( pq0, pq0 ), s*(v0.x*e0.y-v0.y*e0.x) ),
-                       vec2( dot( pq1, pq1 ), s*(v1.x*e1.y-v1.y*e1.x) )),
-                       vec2( dot( pq2, pq2 ), s*(v2.x*e2.y-v2.y*e2.x) ));
+    float2 d = min( min( float2( dot( pq0, pq0 ), s*(v0.x*e0.y-v0.y*e0.x) ),
+                       float2( dot( pq1, pq1 ), s*(v1.x*e1.y-v1.y*e1.x) )),
+                       float2( dot( pq2, pq2 ), s*(v2.x*e2.y-v2.y*e2.x) ));
 
   return -sqrt(d.x)*sign(d.y);
 }
 
-float triangle(vec2 p, vec2 a, vec2 b, vec2 c){
+float triangleS(float2 p, float2 a, float2 b, float2 c){
   float d = distTriangle(p, a, b, c);
     float m = S(0.03, 0.01, d);
     float d2 =  length(a - b);
@@ -147,43 +135,43 @@ float triangle(vec2 p, vec2 a, vec2 b, vec2 c){
     return m;
 }
 
-float N21(vec2 p){
-  p = fract(p * vec2(233.34, 851.73));
+float N21(float2 p){
+  p = frac(p * float2(233.34, 851.73));
     p += dot(p, p + 23.45);
-    return fract(p.x * p.y);
+    return frac(p.x * p.y);
 }
 
-vec2 N22(vec2 p){
+float2 N22(float2 p){
   float n = N21(p);
-    return vec2(n, N21(p + n));
+    return float2(n, N21(p + n));
 }
 
-vec2 getPos(vec2 id, vec2 offset){
-    vec2 n = N22(id + offset) * iTime;
+float2 getPos(float2 id, float2 offset){
+    float2 n = N22(id + offset) * _Time.y;
     return offset + sin(n) * 0.4;
 }
 
-float layer(vec2 uv){
-  vec2 gv = fract(uv) - 0.5;
-    vec2 id = floor(uv);
-    vec2 p[9];
+float layer(float2 uv){
+  float2 gv = frac(uv) - 0.5;
+    float2 id = floor(uv);
+    float2 p[9];
     int i = 0;
     for(float y = -1.0; y <= 1.0; y++){
       for(float x = -1.0; x <= 1.0; x++){
-          p[i++] = getPos(id, vec2(x, y));
+          p[i++] = getPos(id, float2(x, y));
       }    
     }
     
     
-    float t = iTime * 10.0;
+    float t = _Time.y * 10.0;
     float m = 0.0;
     for(int i = 0; i < 9; i++){
-      m += line(gv, p[4], p[i]);
+      m += lineL(gv, p[4], p[i]);
         
-        vec2 j = (p[i] - gv) * 20.0;
+        float2 j = (p[i] - gv) * 20.0;
         float sparkle = 1.0 / dot(j, j);
         
-        m += sparkle * (sin(t + fract(p[i].x) * 10.0) * 0.5 + 0.5);
+        m += sparkle * (sin(t + frac(p[i].x) * 10.0) * 0.5 + 0.5);
         
         for(int yi= i + 1; yi < 9; yi++){
         for(int zi= yi + 1; zi < 9; zi++){
@@ -193,55 +181,67 @@ float layer(vec2 uv){
                 float len3 = abs(length(p[i] - p[zi]));
                 
                 if((len1 + len2 + len3) < 2.8){
-                  m += triangle(gv, p[i], p[yi], p[zi]) * 0.8;
+                  m += triangleS(gv, p[i], p[yi], p[zi]) * 0.8;
                 }
         }
       }
     }
-    m += line(gv, p[1], p[3]);
-    m += line(gv, p[1], p[5]);
-    m += line(gv, p[7], p[3]);
-    m += line(gv, p[7], p[5]);
+    m += lineL(gv, p[1], p[3]);
+    m += lineL(gv, p[1], p[5]);
+    m += lineL(gv, p[7], p[3]);
+    m += lineL(gv, p[7], p[5]);
 
     return m;
 }
 
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 fragCoord = v.vertex;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
+
     //nebula
-    vec3 movementDirection = normalize(vec3(0.01, 0.0, 1.0));
+    float3 movementDirection = normalize(float3(0.01, 0.0, 1.0));
     
-    vec3 rayDirection = getRayDirection(fragCoord, movementDirection);
+    float3 rayDirection = rd; // getRayDirection(fragCoord, movementDirection);
     
-    vec3 globalPosition = vec3(3.14159, 3.14159, 0.0) + (iTime + 1000.0) * FLIGHT_SPEED * movementDirection;
+    float3 globalPosition = ro; //vec3(3.14159, 3.14159, 0.0) + (iTime + 1000.0) * FLIGHT_SPEED * movementDirection;
     
     fragColor = getNebulaColor(globalPosition, rayDirection);
     
     // plexus
-    vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+    float2 uv = v.uv; //(fragCoord - 0.5 * iResolution.xy) / iResolution.y;
     
     float m = 0.0;
-    float t = iTime * 0.1;
+    float t = _Time.y * 0.1;
         
     for(float i = 0.0; i < 1.0; i += 1.0 / 4.0){
-        float z = fract(i + t);
-        float size = mix(10.0, 0.5, z);
+        float z = frac(i + t);
+        float size = lerp(10.0, 0.5, z);
         float fade = S(0.0, 0.1, z) * S(1.0, 0.8, z);
         
         m += layer(uv * size + i * 20.0) * fade;
     }
     
     
-    vec3 base = vec3(0.5, 0.3, 0.1);
-    vec3 col = m * base * 0.1;
+    float3 base = float3(0.5, 0.3, 0.1);
+    float3 col = m * base * 0.1;
     
     col -= uv.y * 0.5 * base;
         
-    fragColor += vec4(col,1.0);
-}
+    fragColor += float4(col,1.0);
 
+                return fragColor;
+            }
 
             ENDCG
         }
     }
 }
+

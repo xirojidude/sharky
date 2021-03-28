@@ -26,22 +26,20 @@ Shader "Skybox/FractalStarfield"
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
             }
 
@@ -49,11 +47,16 @@ Shader "Skybox/FractalStarfield"
 
             fixed4 frag (v2f v) : SV_Target
             {
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
                 fixed4 O = fixed4(0,0,0,0);
                 float2 C = v.vertex;
 
-                float3 p,r=float3(800.,480.,0.),
-                d=normalize(float3((C-.5*r.xy)/r.y,1));  
+                float3 p=ro,r=rd, //  float3(800.,480.,0.),
+                d=rd; //normalize(float3((C-.5*r.xy)/r.y,1));  
                 for(float i=0.,g,e,s;
                     ++i<99.;
                     O.xyz+=5e-5*abs(cos(float3(3,2,1)+log(s*9.)))/dot(p,p)/e

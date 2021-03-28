@@ -1,4 +1,5 @@
-﻿Shader "Unlit/Postcard"
+﻿
+Shader "Skybox/Postcard"
 {
     Properties
     {
@@ -19,38 +20,26 @@
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
-            }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
             }
 
 
@@ -71,38 +60,38 @@
 //Compare with simple clouds
 //#define BASIC_CLOUDS
 
-#define time iTime*2.
+#define time _Time.y*2.
 #define FAR 420.
 
 //------------------------------------------------------------------
 //----------------------Utility functions---------------------------
 //------------------------------------------------------------------
-vec3 rotx(vec3 p, float a){
+float3 rotx(float3 p, float a){
     float s = sin(a), c = cos(a);
-    return vec3(p.x, c*p.y - s*p.z, s*p.y + c*p.z);
+    return float3(p.x, c*p.y - s*p.z, s*p.y + c*p.z);
 }
-vec3 roty(vec3 p, float a){
+float3 roty(float3 p, float a){
     float s = sin(a), c = cos(a);
-    return vec3(c*p.x + s*p.z, p.y, -s*p.x + c*p.z);
+    return float3(c*p.x + s*p.z, p.y, -s*p.x + c*p.z);
 }
-float nmzHash(vec2 q)
+float nmzHash(float2 q)
 {
-    uvec2 p = uvec2(ivec2(q));
-    p = p*uvec2(374761393U,22695477U) + p.yx;
+    uint2 p = float2(float2(q));               //uvec2 p = ufloat2(ivec2(q));
+    p = p*uint2(374761393U,22695477U) + p.yx;   //p = p*uvec2(374761393U,22695477U) + p.yx;
     p.x = p.x*(p.y^(p.x>>15U));
     return float(p.x^(p.x >> 16U))*(1.0/float(0xffffffffU));
 }
-float noise(in vec2 p) {
-    vec2 ip = floor(p);
-    vec2 fp = fract(p);
-    vec2 u = fp*fp*(3.0-2.0*fp);
-    return -1.0+2.0*mix( mix( nmzHash( ip + vec2(0.0,0.0) ), nmzHash( ip + vec2(1.0,0.0) ), u.x),
-                mix(nmzHash( ip + vec2(0.0,1.0) ), nmzHash( ip + vec2(1.0,1.0)), u.x), u.y);
+float noise(in float2 p) {
+    float2 ip = floor(p);
+    float2 fp = frac(p);
+    float2 u = fp*fp*(3.0-2.0*fp);
+    return -1.0+2.0*lerp( lerp( nmzHash( ip + float2(0.0,0.0) ), nmzHash( ip + float2(1.0,0.0) ), u.x),
+                lerp(nmzHash( ip + float2(0.0,1.0) ), nmzHash( ip + float2(1.0,1.0)), u.x), u.y);
 }
 //------------------------------------------------------------------
 //---------------------------Terrain--------------------------------
 //------------------------------------------------------------------
-float terrain(in vec2 p)
+float terrain(in float2 p)
 {
     p*= 0.035;
     float rz = 0.;
@@ -119,9 +108,9 @@ float terrain(in vec2 p)
     return rz*20.-14.;
 }
 
-float tmap(in vec3 p){ return p.y-terrain(p.zx);}
+float tmap(in float3 p){ return p.y-terrain(p.zx);}
 //Using "cheap AA" from eiffie (https://www.shadertoy.com/view/XsSXDt)
-vec3 tmarch(in vec3 ro, in vec3 rd, in float d)
+float3 tmarch(in float3 ro, in float3 rd, in float d)
 {
     float precis = 0.01;
     float h=precis*2.0;
@@ -136,33 +125,33 @@ vec3 tmarch(in vec3 ro, in vec3 rd, in float d)
         }
         if( abs(h)<precis||d>FAR ) break;
     }
-    return vec3(d, hm, dhm);
+    return float3(d, hm, dhm);
 }
 
 
-vec3 normal( in vec3 pos, float t )
+float3 normal( in float3 pos, float t )
 {
     float e = 0.001*t;
-    vec2  eps = vec2(e,0.0);
+    float2  eps = float2(e,0.0);
     float h = terrain(pos.xz);
-    return normalize(vec3( terrain(pos.xz-eps.xy)-h, e, terrain(pos.xz-eps.yx)-h ));
+    return normalize(float3( terrain(pos.xz-eps.xy)-h, e, terrain(pos.xz-eps.yx)-h ));
 }
 
-float plane( in vec3 ro, in vec3 rd, vec3 c, vec3 u, vec3 v )
+float plane( in float3 ro, in float3 rd, float3 c, float3 u, float3 v )
 {
-    vec3 q = ro - c;
-    vec3 n = cross(u,v);
+    float3 q = ro - c;
+    float3 n = cross(u,v);
     return -dot(n,q)/dot(rd,n);
 }
 //------------------------------------------------------------------
 //-------------------------2d Clouds--------------------------------
 //------------------------------------------------------------------
-vec3 lgt = normalize(vec3(-1.0,0.1,.0));
-vec3 hor = vec3(0);
+float3 lgt = normalize(float3(-1.0,0.1,.0));
+float3 hor = float3(0,0,0);
 
-float nz(in vec2 p){return texture(iChannel0, p*.01).x;}
-mat2 m2 = mat2( 0.80,  0.60, -0.60,  0.80 );
-float fbm(in vec2 p, in float d)
+float nz(in float2 p){return tex2D(_MainTex, p*.01).x;}
+float2x2 m2 = float2x2( 0.80,  0.60, -0.60,  0.80 );
+float fbm(in float2 p, in float d)
 {   
     d = smoothstep(0.,100.,d);
     p *= .3/(d+0.2);
@@ -175,34 +164,34 @@ float fbm(in vec2 p, in float d)
         z *= 2.1;
         p *= 2.15;
         p += time*0.027;
-        p *= m2;
+        p = mul(p,m2);
     }
     return pow(abs(rz),2.-d);
 }
 
-vec4 clouds(in vec3 ro, in vec3 rd, in bool wtr)
+float4 clouds(in float3 ro, in float3 rd, in bool wtr)
 {   
     
     //Base sky coloring is from iq's "Canyon" (https://www.shadertoy.com/view/MdBGzG)
     float sun = clamp(dot(lgt,rd),0.0,1.0 );
-    hor = mix( 1.*vec3(0.70,1.0,1.0), vec3(1.3,0.55,0.15), 0.25+0.75*sun );
-    vec3 col = mix( vec3(0.5,0.75,1.), hor, exp(-(4.+ 2.*(1.-sun))*max(0.0,rd.y-0.05)) );
+    hor = lerp( 1.*float3(0.70,1.0,1.0), float3(1.3,0.55,0.15), 0.25+0.75*sun );
+    float3 col = lerp( float3(0.5,0.75,1.), hor, exp(-(4.+ 2.*(1.-sun))*max(0.0,rd.y-0.05)) );
     col *= 0.4;
     
     if (!wtr)
     {
-        col += 0.8*vec3(1.0,0.8,0.7)*pow(sun,512.0);
-        col += 0.2*vec3(1.0,0.4,0.2)*pow(sun,32.0);
+        col += 0.8*float3(1.0,0.8,0.7)*pow(sun,512.0);
+        col += 0.2*float3(1.0,0.4,0.2)*pow(sun,32.0);
     }
     else 
     {
-        col += 1.5*vec3(1.0,0.8,0.7)*pow(sun,512.0);
-        col += 0.3*vec3(1.0,0.4,0.2)*pow(sun,32.0);
+        col += 1.5*float3(1.0,0.8,0.7)*pow(sun,512.0);
+        col += 0.3*float3(1.0,0.4,0.2)*pow(sun,32.0);
     }
-    col += 0.1*vec3(1.0,0.4,0.2)*pow(sun,4.0);
+    col += 0.1*float3(1.0,0.4,0.2)*pow(sun,4.0);
     
     float pt = (90.0-ro.y)/rd.y; 
-    vec3 bpos = ro + pt*rd;
+    float3 bpos = ro + pt*rd;
     float dist = sqrt(distance(ro,bpos));
     float s2p = distance(bpos,lgt*100.);
     
@@ -216,7 +205,7 @@ vec4 clouds(in vec3 ro, in vec3 rd, in bool wtr)
     for (float i=0.;i<=3.;i++)
     {
 
-        vec3 pp = bpos + ds*lgt;
+        float3 pp = bpos + ds*lgt;
         float v = fbm(pp.xz*cls,dist);
         v = smoothstep(stm,stx,v);
         tot += v;
@@ -225,93 +214,107 @@ vec4 clouds(in vec3 ro, in vec3 rd, in bool wtr)
         #endif
     }
 
-    col = mix(col,vec3(.5,0.5,0.55)*0.2,pow(bz,1.5));
+    col = lerp(col,float3(.5,0.5,0.55)*0.2,pow(bz,1.5));
     tot = smoothstep(-7.5,-0.,1.-tot);
-    vec3 sccol = mix(vec3(0.11,0.1,0.2),vec3(.2,0.,0.1),smoothstep(0.,900.,s2p));
-    col = mix(col,sccol,1.-tot)*1.6;
-    vec3 sncol = mix(vec3(1.4,0.3,0.),vec3(1.5,.65,0.),smoothstep(0.,1200.,s2p));
+    float3 sccol = lerp(float3(0.11,0.1,0.2),float3(.2,0.,0.1),smoothstep(0.,900.,s2p));
+    col = lerp(col,sccol,1.-tot)*1.6;
+    float3 sncol = lerp(float3(1.4,0.3,0.),float3(1.5,.65,0.),smoothstep(0.,1200.,s2p));
     float sd = pow(sun,10.)+.7;
     col += sncol*bz*bz*bz*tot*tot*tot*sd;
     
-    if (wtr) col = mix(col,vec3(0.5,0.7,1.)*0.3,0.4); //make the water blue-er
-    return vec4(col,tot);
+    if (wtr) col = lerp(col,float3(0.5,0.7,1.)*0.3,0.4); //make the water blue-er
+    return float4(col,tot);
 }
 //------------------------------------------------------------------
 //-------------------------------Extras-----------------------------
 //------------------------------------------------------------------
-float bnoise(in vec2 p)
+float bnoise(in float2 p)
 {
     float d = sin(p.x*1.5+sin(p.y*.2))*0.1;
-    return d += texture(iChannel0,p.xy*0.01+time*0.001).x*0.04;
+    return d += tex2D(_MainTex,p.xy*0.01+time*0.001).x*0.04;
 }
 
-vec3 bump(in vec2 p, in vec3 n, in float t)
+float3 bump(in float2 p, in float3 n, in float t)
 {
-    vec2 e = vec2(40.,0)/(t*t);
+    float2 e = float2(40.,0)/(t*t);
     float n0 = bnoise(p);
-    vec3 d = vec3(bnoise(p+e.xy)-n0,2., bnoise(p+e.yx)-n0)/e.x;
+    float3 d = float3(bnoise(p+e.xy)-n0,2., bnoise(p+e.yx)-n0)/e.x;
     n = normalize(n-d);
     return n;
 }
-//------------------------------------------------------------------
-//------------------------------------------------------------------
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
-{   
-    vec2 bp = fragCoord.xy/iResolution.xy*2.-1.;
-    vec2 p  = bp;
-    p.x*=iResolution.x/iResolution.y;
-    vec2 mo = iMouse.xy / iResolution.xy-.5;
-    mo = (mo==vec2(-.5))?mo=vec2(-0.4,-0.15):mo;
-    mo.x *= iResolution.x/iResolution.y;
-    vec3 ro = vec3(140.,0.,100.);
-    vec3 rd = normalize(vec3(p,-2.7));
-    rd = rotx(rd,0.15+mo.y*0.4);rd = roty(rd,1.5+mo.x*0.5);
-    vec3 brd = rd;
-    vec3 col = vec3(0);
+
+
+
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 fragCoord = v.vertex;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
+
+//    vec2 bp = fragCoord.xy/iResolution.xy*2.-1.;
+//    vec2 p  = bp;
+//    p.x*=iResolution.x/iResolution.y;
+//    vec2 mo = iMouse.xy / iResolution.xy-.5;
+//    mo = (mo==vec2(-.5))?mo=vec2(-0.4,-0.15):mo;
+ //   mo.x *= iResolution.x/iResolution.y;
+//    vec3 ro = vec3(140.,0.,100.);
+//    vec3 rd = normalize(vec3(p,-2.7));
+ //   rd = rotx(rd,0.15+mo.y*0.4);rd = roty(rd,1.5+mo.x*0.5);
+    float3 brd = rd;
+    float3 col = float3(0,0,0);
         
-    float pln = plane(ro, rd, vec3(0.,-4.,0), vec3(1.,0.,0.), vec3(0.0,.0,1.0));
-    vec3 ppos = ro + rd*pln;
+    float pln = plane(ro, rd, float3(0.,-4.,0), float3(1.,0.,0.), float3(0.0,.0,1.0));
+    float3 ppos = ro + rd*pln;
     bool wtr = false;
-    vec3 bm = vec3(0);
+    float3 bm = float3(0,0,0);
     if (pln < 500. && pln > 0.)
     {
-        vec3 n = vec3(0,1,0);
+        float3 n = float3(0,1,0);
         float d= distance(ro,ppos);
         n = bump(ppos.xz,n,d);
         bm = n;
         rd = reflect(rd,n);
         wtr = true;
     }
-    vec4 clo = clouds(ro, rd, wtr);
+    float4 clo = clouds(ro, rd, wtr);
     col = clo.rgb;
     
-    vec3 rz = tmarch(ro,brd,350.);
-    float px = 3.5/iResolution.y;
+    float3 rz = tmarch(ro,brd,350.);
+    float px = 3.5/450.; //3.5/iResolution.y;
     if (rz.x < FAR && (rz.x < pln || pln < 0.))
     {
-        vec3 pos = ro + brd*rz.x;
+        float3 pos = ro + brd*rz.x;
         float dst = distance(pos, ro);
-        vec3 nor = normal(pos,dst);
+        float3 nor = normal(pos,dst);
         float nl = clamp(dot(nor,lgt),0.,1.);
-        vec3 mcol = vec3(0.04)+vec3(nl)*0.4*vec3(.5,0.35,0.1);
-        mcol = mix(mcol,hor,smoothstep(210.,400.,rz.x-(pos.y+18.)*5.));//fogtains
-        col = mix(mcol,col,clamp(rz.y/(px*rz.z),0.,1.));
+        float3 mcol = float3(0.04,.04,.04)+float3(nl,nl,nl)*0.4*float3(.5,0.35,0.1);
+        mcol = lerp(mcol,hor,smoothstep(210.,400.,rz.x-(pos.y+18.)*5.));//fogtains
+        col = lerp(mcol,col,clamp(rz.y/(px*rz.z),0.,1.));
     }
     
     //smooth water edge
-    if (wtr && rz.x > pln)col = mix(col,hor*vec3(0.3,0.4,.6)*0.4,smoothstep(10.,200.,pln));
+    if (wtr && rz.x > pln)col = lerp(col,hor*float3(0.3,0.4,.6)*0.4,smoothstep(10.,200.,pln));
     
     //post
-    col = pow(clamp(col,0.0,1.0), vec3(.9));
+    col = pow(clamp(col,0.0,1.0), float3(.9,.9,.9));
     col.g *= 0.93;
     //fancy vignetting
-    float vgn1 = pow(smoothstep(0.0,.3,(bp.x + 1.)*(bp.y + 1.)*(bp.x - 1.)*(bp.y - 1.)),.5);
-    float vgn2 = 1.-pow(dot(vec2(bp.x*.3, bp.y),bp),3.);
-    col *= mix(vgn1,vgn2,.4)*.5+0.5;
-    fragColor = vec4( col, 1.0 );
-}
+//    float vgn1 = pow(smoothstep(0.0,.3,(bp.x + 1.)*(bp.y + 1.)*(bp.x - 1.)*(bp.y - 1.)),.5);
+//    float vgn2 = 1.-pow(dot(vec2(bp.x*.3, bp.y),bp),3.);
+//    col *= float(vgn1,vgn2,.4)*.5+0.5;
+    fragColor = float4( col, 1.0 );
+
+
+                return fragColor;
+            }
 
             ENDCG
         }
     }
 }
+
