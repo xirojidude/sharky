@@ -1,8 +1,10 @@
-﻿Shader "Unlit/DesertCanyon"
+﻿
+Shader "Skybox/DesertCanyon"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("tex2D", 2D) = "white" {}
+        _MainTex2 ("tex2D", 2D) = "white" {}
     }
     SubShader
     {
@@ -19,38 +21,27 @@
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+            uniform sampler2D _MainTex2; 
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
-            }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
             }
 
 
@@ -105,22 +96,22 @@ const float freqB = .25/2.75;
 const float ampA = 20.;
 const float ampB = 4.;
 
-// 2x2 matrix rotation. Angle vector, courtesy of Fabrice.
-mat2 rot2( float th ){ vec2 a = sin(vec2(1.5707963, 0) + th); return mat2(a, -a.y, a.x); }
+// 2x2 matrix rotation. Angle floattor, courtesy of Fabrice.
+float2x2 rot2( float th ){ float2 a = sin(float2(1.5707963, 0) + th); return float2x2(a, -a.y, a.x); }
 
 // 1x1 and 3x1 hash functions.
-float hash(float n){ return fract(cos(n)*45758.5453); }
-float hash(vec3 p){ return fract(sin(dot(p, vec3(7, 157, 113)))*45758.5453); }
+float hash(float n){ return frac(cos(n)*45758.5453); }
+float hash(float3 p){ return frac(sin(dot(p, float3(7, 157, 113)))*45758.5453); }
 
 // Grey scale.
-float getGrey(vec3 p){ return dot(p, vec3(0.299, 0.587, 0.114)); }
+float getGrey(float3 p){ return dot(p, float3(0.299, 0.587, 0.114)); }
 
 /*
 // IQ's smooth minium function. 
 float sminP(float a, float b , float s){
     
     float h = clamp(.5 + .5*(b - a)/s, 0., 1.);
-    return mix(b, a, h) - h*(1.0-h)*s;
+    return lerp(b, a, h) - h*(1.0-h)*s;
 }
 */
 
@@ -128,25 +119,25 @@ float sminP(float a, float b , float s){
 float smaxP(float a, float b, float s){
     
     float h = clamp(.5 + .5*(a - b)/s, 0., 1.);
-    return mix(b, a, h) + h*(1. - h)*s;
+    return lerp(b, a, h) + h*(1. - h)*s;
 }
 
 // The path is a 2D sinusoid that varies over time, depending upon the frequencies, and amplitudes.
-vec2 path(in float z){ return vec2(ampA*sin(z * freqA), ampB*cos(z * freqB) + 3.*(sin(z*0.025)  - 1.)); }
+float2 path(in float z){ return float2(ampA*sin(z * freqA), ampB*cos(z * freqB) + 3.*(sin(z*0.025)  - 1.)); }
 
 // The canyon, complete with hills, gorges and tunnels. I would have liked to provide a far
 // more interesting scene, but had to keep things simple in order to accommodate slower machines.
-float map(in vec3 p){
+float map(in float3 p){
     
-    // Indexing into the pebbled texture to provide some rocky surface detatiling. I like this
-    // texture but I'd much rather produce my own. From what I hear, Shadertoy will be providing
+    // Indexing into the pebbled tex2D to provide some rocky surface detatiling. I like this
+    // tex2D but I'd much rather produce my own. From what I hear, Shadertoy will be providing
     // fixed offscreen buffer sizes (like 512 by 512, for instance) at a later date. When that
     // happens, I'll really be able to do some damage. :)
-    float tx = textureLod(iChannel0, p.xz/16. + p.xy/80., 0.).x;
+    float tx = tex2D(_MainTex, p.xz/16. + p.xy/80.).x;               //tex2DLod(_MainTex, p.xz/16. + p.xy/80., 0.).x;
   
     // A couple of sinusoidal layers to produce the rocky hills.
-    vec3 q = p*.25;
-    float h = dot(sin(q)*cos(q.yzx), vec3(.222)) + dot(sin(q*1.5)*cos(q.yzx*1.5), vec3(.111));
+    float3 q = p*.25;
+    float h = dot(sin(q)*cos(q.yzx), float3(.222,.222,.222)) + dot(sin(q*1.5)*cos(q.yzx*1.5), float3(.111,.111,.111));
     
     
     // The terrain, so to speak. Just a flat XZ plane, at zero height, with some hills added.
@@ -159,7 +150,7 @@ float map(in vec3 p){
     // Producing a single winding tunnel. If you're not familiar with the process, this is it.
     // We're also adding some detailing to the walls via "h" and the rocky "tx" value.
     p.xy -= path(p.z);
-    float tnl = 1.5 - length(p.xy*vec2(.33, .66)) + h + (1. - tx)*.25;
+    float tnl = 1.5 - length(p.xy*float2(.33, .66)) + h + (1. - tx)*.25;
 
     // Smoothly combine the terrain with the tunnel - using a smooth maximum - then add some
     // detailing. I've also added a portion of the tunnel term onto the end, just because
@@ -183,7 +174,7 @@ float map(in vec3 p){
 // For what it's worth, I've tried most of the standard raymarching methods around, and for difficult 
 // surfaces to hone in on, like the one in this particular example, "Log Bisection" is my favorite.
 
-float logBisectTrace(in vec3 ro, in vec3 rd){
+float logBisectTrace(in float3 ro, in float3 rd){
 
 
     float t = 0., told = 0., mid, dn;
@@ -215,19 +206,19 @@ float logBisectTrace(in vec3 ro, in vec3 rd){
 
         dn = sign(map(rd*told + ro));
         
-        vec2 iv = vec2(told, t); // Near, Far
+        float2 iv = float2(told, t); // Near, Far
 
         // 6 iterations seems to be more than enough, for most cases...
         // but there's an early exit, so I've added a couple more.
         for (int ii=0; ii<8; ii++){ 
             //Evaluate midpoint
-            mid = dot(iv, vec2(.5));
+            mid = dot(iv, float2(.5,.5));
             float d = map(rd*mid + ro);
             if (abs(d) < 0.001)break;
             // Suggestion from movAX13h - Shadertoy is one of those rare
             // sites with helpful commenters. :)
             // Set mid to near or far, depending on which side we're on.
-            iv = mix(vec2(iv.x, mid), vec2(mid, iv.y), step(0.0, d*dn));
+            iv = lerp(float2(iv.x, mid), float2(mid, iv.y), step(0.0, d*dn));
         }
 
         t = mid; 
@@ -240,9 +231,9 @@ float logBisectTrace(in vec3 ro, in vec3 rd){
 
 
 // Tetrahedral normal, courtesy of IQ.
-vec3 normal(in vec3 p)
+float3 normal(in float3 p)
 {  
-    vec2 e = vec2(-1, 1)*.001;   
+    float2 e = float2(-1, 1)*.001;   
     return normalize(e.yxx*map(p + e.yxx) + e.xxy*map(p + e.xxy) + 
                      e.xyx*map(p + e.xyx) + e.yyy*map(p + e.yyy) );   
 }
@@ -250,22 +241,22 @@ vec3 normal(in vec3 p)
 
 // Tri-Planar blending function. Based on an old Nvidia writeup:
 // GPU Gems 3 - Ryan Geiss: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch01.html
-vec3 tex3D( sampler2D tex, in vec3 p, in vec3 n ){
+float3 tex3D( sampler2D tex, in float3 p, in float3 n ){
    
     n = max(n*n, .001);
     n /= (n.x + n.y + n.z );  
     
-    return (texture(tex, p.yz)*n.x + texture(tex, p.zx)*n.y + texture(tex, p.xy)*n.z).xyz;
+    return (tex2D(tex, p.yz)*n.x + tex2D(tex, p.zx)*n.y + tex2D(tex, p.xy)*n.z).xyz;
 }
 
 
-// Texture bump mapping. Four tri-planar lookups, or 12 texture lookups in total.
-vec3 doBumpMap( sampler2D tex, in vec3 p, in vec3 nor, float bumpfactor){
+// tex2D bump mapping. Four tri-planar lookups, or 12 tex2D lookups in total.
+float3 doBumpMap( sampler2D tex, in float3 p, in float3 nor, float bumpfactor){
    
     const float eps = .001;
-    vec3 grad = vec3( getGrey(tex3D(tex, vec3(p.x - eps, p.y, p.z), nor)),
-                      getGrey(tex3D(tex, vec3(p.x, p.y - eps, p.z), nor)),
-                      getGrey(tex3D(tex, vec3(p.x, p.y, p.z - eps), nor)));
+    float3 grad = float3( getGrey(tex3D(tex, float3(p.x - eps, p.y, p.z), nor)),
+                      getGrey(tex3D(tex, float3(p.x, p.y - eps, p.z), nor)),
+                      getGrey(tex3D(tex, float3(p.x, p.y, p.z - eps), nor)));
     
     grad = (grad - getGrey(tex3D(tex, p, nor)))/eps; 
             
@@ -278,7 +269,7 @@ vec3 doBumpMap( sampler2D tex, in vec3 p, in vec3 nor, float bumpfactor){
 // The iterations should be higher for proper accuracy, but in this case, I wanted less accuracy, just to leave
 // behind some subtle trails of light in the caves. They're fake, but they look a little like light streaming 
 // through some cracks... kind of.
-float softShadow(in vec3 ro, in vec3 rd, in float start, in float end, in float k){
+float softShadow(in float3 ro, in float3 rd, in float start, in float end, in float k){
 
     float shade = 1.;
     // Increase this and the shadows will be more accurate, but the wispy light trails in the caves will disappear.
@@ -330,7 +321,7 @@ float softShadow(in vec3 ro, in vec3 rd, in float start, in float end, in float 
 //
 // Hemispherical SDF AO - https://www.shadertoy.com/view/4sdGWN
 // Alien Cocoons - https://www.shadertoy.com/view/MsdGz2
-float calculateAO( in vec3 p, in vec3 n, float maxDist )
+float calculateAO( in float3 p, in float3 n, float maxDist )
 {
     float ao = 0., l;
     const float nbIte = 6.;
@@ -346,37 +337,37 @@ float calculateAO( in vec3 p, in vec3 n, float maxDist )
 }
 
 // More concise, self contained version of IQ's original 3D noise function.
-float noise3D(in vec3 p){
+float noise3D(in float3 p){
     
     // Just some random figures, analogous to stride. You can change this, if you want.
-    const vec3 s = vec3(7, 157, 113);
+    const float3 s = float3(7, 157, 113);
     
-    vec3 ip = floor(p); // Unique unit cell ID.
+    float3 ip = floor(p); // Unique unit cell ID.
     
-    // Setting up the stride vector for randomization and interpolation, kind of. 
+    // Setting up the stride floattor for randomization and interpolation, kind of. 
     // All kinds of shortcuts are taken here. Refer to IQ's original formula.
-    vec4 h = vec4(0., s.yz, s.y + s.z) + dot(ip, s);
+    float4 h = float4(0., s.yz, s.y + s.z) + dot(ip, s);
     
-    p -= ip; // Cell's fractional component.
+    p -= ip; // Cell's fracional component.
     
     // A bit of cubic smoothing, to give the noise that rounded look.
     p = p*p*(3. - 2.*p);
     
     // Standard 3D noise stuff. Retrieving 8 random scalar values for each cube corner,
     // then interpolating along X. There are countless ways to randomize, but this is
-    // the way most are familar with: fract(sin(x)*largeNumber).
-    h = mix(fract(sin(h)*43758.5453), fract(sin(h + s.x)*43758.5453), p.x);
+    // the way most are familar with: frac(sin(x)*largeNumber).
+    h = lerp(frac(sin(h)*43758.5453), frac(sin(h + s.x)*43758.5453), p.x);
     
     // Interpolating along Y.
-    h.xy = mix(h.xz, h.yw, p.y);
+    h.xy = lerp(h.xz, h.yw, p.y);
     
     // Interpolating along Z, and returning the 3D noise value.
-    return mix(h.x, h.y, p.z); // Range: [0, 1].
+    return lerp(h.x, h.y, p.z); // Range: [0, 1].
     
 }
 
 // Simple fBm to produce some clouds.
-float fbm(in vec3 p){
+float fbm(in float3 p){
     
     // Four layers of 3D noise.
     return .5333*noise3D(p) + .2667*noise3D(p*2.02) + .1333*noise3D(p*4.03) + .0667*noise3D(p*8.03);
@@ -385,32 +376,32 @@ float fbm(in vec3 p){
 
 
 // Pretty standard way to make a sky. 
-vec3 getSky(in vec3 ro, in vec3 rd, vec3 sunDir){
+float3 getSky(in float3 ro, in float3 rd, float3 sunDir){
 
     
     float sun = max(dot(rd, sunDir), 0.); // Sun strength.
     float horiz = pow(1.0-max(rd.y, 0.), 3.)*.35; // Horizon strength.
     
     // The blueish sky color. Tinging the sky redish around the sun.        
-    vec3 col = mix(vec3(.25, .35, .5), vec3(.4, .375, .35), sun*.75);//.zyx;
-    // Mixing in the sun color near the horizon.
-    col = mix(col, vec3(1, .9, .7), horiz);
+    float3 col = lerp(float3(.25, .35, .5), float3(.4, .375, .35), sun*.75);//.zyx;
+    // lerping in the sun color near the horizon.
+    col = lerp(col, float3(1, .9, .7), horiz);
     
     // Sun. I can thank IQ for this tidbit. Producing the sun with three
     // layers, rather than just the one. Much better.
-    col += .25*vec3(1, .7, .4)*pow(sun, 5.);
-    col += .25*vec3(1, .8, .6)*pow(sun, 64.);
-    col += .2*vec3(1, .9, .7)*max(pow(sun, 512.), .3);
+    col += .25*float3(1, .7, .4)*pow(sun, 5.);
+    col += .25*float3(1, .8, .6)*pow(sun, 64.);
+    col += .2*float3(1, .9, .7)*max(pow(sun, 512.), .3);
     
     // Add a touch of speckle, to match up with the slightly speckly ground.
     col = clamp(col + hash(rd)*.05 - .025, 0., 1.);
     
     // Clouds. Render some 3D clouds far off in the distance. I've made them sparse and wispy,
     // since we're in the desert, and all that.
-    vec3 sc = ro + rd*FAR*100.; sc.y *= 3.;
+    float3 sc = ro + rd*FAR*100.; sc.y *= 3.;
     
-    // Mix the sky with the clouds, whilst fading out a little toward the horizon (The rd.y bit).
-    return mix( col, vec3(1, .95, 1), .5*smoothstep(.5, 1., fbm(.001*sc)) * clamp(rd.y*4., 0., 1.) );
+    // lerp the sky with the clouds, whilst fading out a little toward the horizon (The rd.y bit).
+    return lerp( col, float3(1, .95, 1), .5*smoothstep(.5, 1., fbm(.001*sc)) * clamp(rd.y*4., 0., 1.) );
     
 
 }
@@ -426,11 +417,11 @@ vec3 getSky(in vec3 ro, in vec3 rd, vec3 sunDir){
 //
 // Original usage (I think?) - Cheap curvature: https://www.shadertoy.com/view/Xts3WM
 // Other usage: Xyptonjtroz: https://www.shadertoy.com/view/4ts3z2
-float curve(in vec3 p){
+float curve(in float3 p){
 
     const float eps = .05, amp = 4., ampInit = .5;
 
-    vec2 e = vec2(-1, 1)*eps; // 0.05->3.5 - 0.04->5.5 - 0.03->10.->0.1->1.
+    float2 e = float2(-1, 1)*eps; // 0.05->3.5 - 0.04->5.5 - 0.03->10.->0.1->1.
     
     float t1 = map(p + e.yxx), t2 = map(p + e.xxy);
     float t3 = map(p + e.xyx), t4 = map(p + e.yyy);
@@ -439,75 +430,86 @@ float curve(in vec3 p){
 }
 
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord){
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 fragCoord = v.uv;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
 
     
     // Screen coordinates.
-    vec2 u = (fragCoord - iResolution.xy*.5)/iResolution.y;
+    float2 u = float2(0.5,0.5);  //(fragCoord - iResolution.xy*.5)/iResolution.y;
     
     // Camera Setup.
-    vec3 lookAt = vec3(0, 0, iTime*8.);  // "Look At" position.
-    vec3 ro = lookAt + vec3(0, 0, -.25); // Camera position, doubling as the ray origin.
+    float3 lookAt = float3(0, 0, _Time.y*8.);  // "Look At" position.
+ //   float3 
+ ro = lookAt + float3(0, 0, -.25); // Camera position, doubling as the ray origin.
  
     // Using the Z-value to perturb the XY-plane.
-    // Sending the camera and "look at" vectors down the tunnel. The "path" function is 
+    // Sending the camera and "look at" floattors down the tunnel. The "path" function is 
     // synchronized with the distance function.
     lookAt.xy += path(lookAt.z);
     ro.xy += path(ro.z);
 
-    // Using the above to produce the unit ray-direction vector.
+    // Using the above to produce the unit ray-direction floattor.
     float FOV = 3.14159/3.; // FOV - Field of view.
-    vec3 forward = normalize(lookAt - ro);
-    vec3 right = normalize(vec3(forward.z, 0, -forward.x )); 
-    vec3 up = cross(forward, right);
+    float3 forward = normalize(lookAt - ro);
+    float3 right = normalize(float3(forward.z, 0, -forward.x )); 
+    float3 up = cross(forward, right);
 
     // rd - Ray direction.
-    vec3 rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
+//    float3 
+rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
     
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.
-    rd.xy = rot2( path(lookAt.z).x/64. )*rd.xy;
+    rd.xy = mul(rot2( path(lookAt.z).x/64. ),rd.xy);
     
     
     
     // Usually, you'd just make this a unit directional light, and be done with it, but I
     // like some of the angular subtleties of point lights, so this is a point light a
     // long distance away. Fake, and probably not advisable, but no one will notice.
-    vec3 lp = vec3(FAR*.5, FAR, FAR) + vec3(0, 0, ro.z);
+    float3 lp = float3(FAR*.5, FAR, FAR) + float3(0, 0, ro.z);
  
 
     // Raymarching, using Nimitz's "Log Bisection" method. Very handy on stubborn surfaces. :)
     float t = logBisectTrace(ro, rd);
     
     // Standard sky routine. Worth learning. For outdoor scenes, you render the sky, then the
-    // terrain, then mix together with a fog falloff. Pretty straight forward.
-    vec3 sky = getSky(ro, rd, normalize(lp - ro));
+    // terrain, then lerp together with a fog falloff. Pretty straight forward.
+    float3 sky = getSky(ro, rd, normalize(lp - ro));
     
     // The terrain color. Can't remember why I set it to sky. I'm sure I had my reasons.
-    vec3 col = sky;
+    float3 col = sky;
     
     // If we've hit the ground, color it up.
     if (t < FAR){
     
-        vec3 sp = ro+t*rd; // Surface point.
-        vec3 sn = normal(sp); // Surface normal.
+        float3 sp = ro+t*rd; // Surface point.
+        float3 sn = normal(sp); // Surface normal.
 
         
-        // Light direction vector. From the sun to the surface point. We're not performing
+        // Light direction floattor. From the sun to the surface point. We're not performing
         // light distance attenuation, since it'll probably have minimal effect.
-        vec3 ld = lp-sp;
-        ld /= max(length(ld), 0.001); // Normalize the light direct vector.
+        float3 ld = lp-sp;
+        ld /= max(length(ld), 0.001); // Normalize the light direct floattor.
 
         
-        // Texture scale factor.        
+        // tex2D scale factor.        
         const float tSize1 = 1./6.;
         
-        // Bump mapping with the sandstone texture to provide a bit of gritty detailing.
+        // Bump mapping with the sandstone tex2D to provide a bit of gritty detailing.
         // This might seem counter intuitive, but I've turned off mip mapping and set the
-        // texture to linear, in order to give some grainyness. I'm dividing the bump
-        // factor by the distance to smooth it out a little. Mip mapped textures without
+        // tex2D to linear, in order to give some grainyness. I'm dividing the bump
+        // factor by the distance to smooth it out a little. Mip mapped tex2Ds without
         // anisotropy look too smooth at certain viewing angles.
-        sn = doBumpMap(iChannel1, sp*tSize1, sn, .007/(1. + t/FAR));//max(1.-length(fwidth(sn)), .001)*hash(sp)/(1.+t/FAR)
+        sn = doBumpMap(_MainTex2, sp*tSize1, sn, .007/(1. + t/FAR));//max(1.-length(fwidth(sn)), .001)*hash(sp)/(1.+t/FAR)
         
         float shd = softShadow(sp, ld, .05, FAR, 8.); // Shadows.
         float curv = curve(sp)*.9 +.1; // Surface curvature.
@@ -523,31 +525,31 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord){
         // so could almost be aproximated by a constant, but I prefer it. Here, it's being
         // used to give a hard clay consistency... It "kind of" works.
         float Schlick = pow( 1. - max(dot(rd, normalize(rd + ld)), 0.), 5.);
-        float fre2 = mix(.2, 1., Schlick);  //F0 = .2 - Hard clay... or close enough.
+        float fre2 = lerp(.2, 1., Schlick);  //F0 = .2 - Hard clay... or close enough.
        
         // Overal global ambience. Without it, the cave sections would be pretty dark. It's made up,
         // but I figured a little reflectance would be in amongst it... Sounds good, anyway. :)
         float amb = fre*fre2 + .06*ao;
         
         // Coloring the soil - based on depth. Based on a line from Dave Hoskins's "Skin Peeler."
-        col = clamp(mix(vec3(.8, .5, .3), vec3(.5, .25, .125),(sp.y+1.)*.15), vec3(.5, .25, .125), vec3(1));
+        col = clamp(lerp(float3(.8, .5, .3), float3(.5, .25, .125),(sp.y+1.)*.15), float3(.5, .25, .125), float3(1,1,1));
         
-        // Give the soil a bit of a sandstone texture. This line's made up.
-        col =  smoothstep(-.5, 1., tex3D(iChannel1, sp*tSize1, sn))*(col + .25);
+        // Give the soil a bit of a sandstone tex2D. This line's made up.
+        col =  smoothstep(-.5, 1., tex3D(_MainTex2, sp*tSize1, sn))*(col + .25);
         // One thing I really miss when using Shadertoy is anisotropic filtering, which makes mapped 
-        // textures appear far more crisp. It requires just a few lines in the backend code, and doesn't 
+        // tex2Ds appear far more crisp. It requires just a few lines in the backend code, and doesn't 
         // appear to effect frame rate, but I'm assuming the developers have their reasons. Anyway, this
         // line attempts to put a little definition back in, but it's definitely not the same thing. :)     
         col = clamp(col + noise3D(sp*48.)*.3 - .15, 0., 1.);
         
         // Edit: This shader needs gamma correction, so I've hacked this and a postprocessing line
         // in to counter the dark shading... I'll do it properly later.
-        col = pow(col, vec3(1.5));
+        col = pow(col, float3(1.5,1.5,1.5));
         
         // Tweaking the curvature value a bit, then using it to color in the crevices with a 
         // brownish color... in a lame attempt to make the surface look dirt-like.
         curv = smoothstep(0., .7, curv);
-        col *= vec3(curv, curv*.95, curv*.85);
+        col *= float3(curv, curv*.95, curv*.85);
  
         
         // A bit of sky reflection. Not really accurate, but I've been using fake physics since the 90s. :)
@@ -566,27 +568,29 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord){
     // Combine the terrain with the sky using some distance fog. This one is designed to fade off very
     // quickly a few units out from the horizon. Account for the clouds, change "FAR - 15." to zero, and 
     // the fog will be way more prominent. You could also use "1./(1 + t*scale)," etc.
-    col = mix(col, sky, sqrt(smoothstep(FAR - 15., FAR, t)));
+    col = lerp(col, sky, sqrt(smoothstep(FAR - 15., FAR, t)));
     
 
     // Edit: This shader needs gamma correction, so I've hacked this and a line above in
     // to counter the dark shading... I'll do it properly later.
-    col = pow(max(col, 0.), vec3(.75));
+    col = pow(max(col, 0.), float3(.75,.75,.75));
 
     
     // Standard way to do a square vignette. Note that the maxium value value occurs at "pow(0.5, 4.) = 1./16," 
     // so you multiply by 16 to give it a zero to one range. This one has been toned down with a power
     // term to give it more subtlety.
-    u = fragCoord/iResolution.xy;
+    u =  float2(1,1); //fragCoord/iResolution.xy;
     col *= pow(16.*u.x*u.y*(1. - u.x)*(1. - u.y) , .0625);
 
     // Done.
-    fragColor = vec4(clamp(col, 0., 1.), 1);
-}
+    fragColor = float4(clamp(col, 0., 1.), 1);
 
-
+                return fragColor;
+            }
 
             ENDCG
         }
     }
 }
+
+

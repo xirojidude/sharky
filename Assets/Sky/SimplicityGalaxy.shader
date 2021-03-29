@@ -1,8 +1,9 @@
-﻿Shader "Unlit/SimplicityGalaxy"
+﻿
+Shader "Skybox/SimplicityGalaxy"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("tex2D", 2D) = "white" {}
     }
     SubShader
     {
@@ -19,54 +20,42 @@
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
-            }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
             }
 
 
 //CBS
-//Parallax scrolling fractal galaxy.
+//Parallax scrolling fracal galaxy.
 //Inspired by JoshP's Simplicity shader: https://www.shadertoy.com/view/lslGWr
 
-// http://www.fractalforums.com/new-theories-and-research/very-simple-formula-for-fractal-patterns/
-float field(in vec3 p,float s) {
-    float strength = 7. + .03 * log(1.e-6 + fract(sin(iTime) * 4373.11));
+// http://www.fracalforums.com/new-theories-and-research/very-simple-formula-for-fracal-patterns/
+float field(in float3 p,float s) {
+    float strength = 7. + .03 * log(1.e-6 + frac(sin(_Time.y) * 4373.11));
     float accum = s/4.;
     float prev = 0.;
     float tw = 0.;
     for (int i = 0; i < 26; ++i) {
         float mag = dot(p, p);
-        p = abs(p) / mag + vec3(-.5, -.4, -1.5);
+        p = abs(p) / mag + float3(-.5, -.4, -1.5);
         float w = exp(-float(i) / 7.);
         accum += w * exp(-strength * pow(abs(mag - prev), 2.2));
         tw += w;
@@ -76,14 +65,14 @@ float field(in vec3 p,float s) {
 }
 
 // Less iterations for second layer
-float field2(in vec3 p, float s) {
-    float strength = 7. + .03 * log(1.e-6 + fract(sin(iTime) * 4373.11));
+float field2(in float3 p, float s) {
+    float strength = 7. + .03 * log(1.e-6 + frac(sin(_Time.y) * 4373.11));
     float accum = s/4.;
     float prev = 0.;
     float tw = 0.;
     for (int i = 0; i < 18; ++i) {
         float mag = dot(p, p);
-        p = abs(p) / mag + vec3(-.5, -.4, -1.5);
+        p = abs(p) / mag + float3(-.5, -.4, -1.5);
         float w = exp(-float(i) / 7.);
         accum += w * exp(-strength * pow(abs(mag - prev), 2.2));
         tw += w;
@@ -92,56 +81,72 @@ float field2(in vec3 p, float s) {
     return max(0., 5. * accum / tw - .7);
 }
 
-vec3 nrand3( vec2 co )
+float3 nrand3( float2 co )
 {
-    vec3 a = fract( cos( co.x*8.3e-3 + co.y )*vec3(1.3e5, 4.7e5, 2.9e5) );
-    vec3 b = fract( sin( co.x*0.3e-3 + co.y )*vec3(8.1e5, 1.0e5, 0.1e5) );
-    vec3 c = mix(a, b, 0.5);
+    float3 a = frac( cos( co.x*8.3e-3 + co.y )*float3(1.3e5, 4.7e5, 2.9e5) );
+    float3 b = frac( sin( co.x*0.3e-3 + co.y )*float3(8.1e5, 1.0e5, 0.1e5) );
+    float3 c = lerp(a, b, 0.5);
     return c;
 }
 
+         fixed4 frag (v2f v2) : SV_Target
+            {
+                float2 fragCoord = v2.vertex;
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
-    vec2 uv = 2. * fragCoord.xy / iResolution.xy - 1.;
-    vec2 uvs = uv * iResolution.xy / max(iResolution.x, iResolution.y);
-    vec3 p = vec3(uvs / 4., 0) + vec3(1., -1.3, 0.);
-    p += .2 * vec3(sin(iTime / 16.), sin(iTime / 12.),  sin(iTime / 128.));
+                float3 viewDirection = normalize(v2.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v2.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
+    float2 uv = rd.xy; //2. * fragCoord.xy / iResolution.xy - 1.;
+    float2 uvs = uv ; // * iResolution.xy / max(iResolution.x, iResolution.y);
+    float3 p = rd; //float3(uvs / 4., 0) + float3(1., -1.3, 0.);
+//    p += .2 * float3(sin(_Time.y / 16.), sin(_Time.y / 12.),  sin(_Time.y / 128.));
     
     float freqs[4];
     //Sound
-    freqs[0] = texture( iChannel0, vec2( 0.01, 0.25 ) ).x;
-    freqs[1] = texture( iChannel0, vec2( 0.07, 0.25 ) ).x;
-    freqs[2] = texture( iChannel0, vec2( 0.15, 0.25 ) ).x;
-    freqs[3] = texture( iChannel0, vec2( 0.30, 0.25 ) ).x;
+    freqs[0] = tex2D( _MainTex, float2( 0.01, 0.25 ) ).x;
+    freqs[1] = tex2D( _MainTex, float2( 0.07, 0.25 ) ).x;
+    freqs[2] = tex2D( _MainTex, float2( 0.15, 0.25 ) ).x;
+    freqs[3] = tex2D( _MainTex, float2( 0.30, 0.25 ) ).x;
 
     float t = field(p,freqs[2]);
     float v = (1. - exp((abs(uv.x) - 1.) * 6.)) * (1. - exp((abs(uv.y) - 1.) * 6.));
     
     //Second Layer
-    vec3 p2 = vec3(uvs / (4.+sin(iTime*0.11)*0.2+0.2+sin(iTime*0.15)*0.3+0.4), 1.5) + vec3(2., -1.3, -1.);
-    p2 += 0.25 * vec3(sin(iTime / 16.), sin(iTime / 12.),  sin(iTime / 128.));
+    float3 p2 = float3(uvs / (4.+sin(_Time.y*0.11)*0.2+0.2+sin(_Time.y*0.15)*0.3+0.4), 1.5) + float3(2., -1.3, -1.);
+    p2 += 0.25 * float3(sin(_Time.y / 16.), sin(_Time.y / 12.),  sin(_Time.y / 128.));
     float t2 = field2(p2,freqs[3]);
-    vec4 c2 = mix(.4, 1., v) * vec4(1.3 * t2 * t2 * t2 ,1.8  * t2 * t2 , t2* freqs[0], t2);
+    float4 c2 = lerp(.4, 1., v) * float4(1.3 * t2 * t2 * t2 ,1.8  * t2 * t2 , t2* freqs[0], t2);
     
     
     //Let's add some stars
     //Thanks to http://glsl.heroku.com/e#6904.0
-    vec2 seed = p.xy * 2.0; 
-    seed = floor(seed * iResolution.x);
-    vec3 rnd = nrand3( seed );
-    vec4 starcolor = vec4(pow(rnd.y,40.0));
+    float2 seed = p.xy * 2.0; 
+    seed = floor(seed * 800);  //iResolution.x);
+    float3 rnd = nrand3( seed );
+    float sc= pow(rnd.y,40.0);
+    float4 starcolor = float4(sc,sc,sc,sc);
     
     //Second Layer
-    vec2 seed2 = p2.xy * 2.0;
-    seed2 = floor(seed2 * iResolution.x);
-    vec3 rnd2 = nrand3( seed2 );
-    starcolor += vec4(pow(rnd2.y,40.0));
+    float2 seed2 = p2.xy * 2.0;
+    seed2 = floor(seed2 * 800.); //iResolution.x);
+    float3 rnd2 = nrand3( seed2 );
+    sc = pow(rnd2.y,40.0);
+    starcolor += float4(sc,sc,sc,sc);
     
-    fragColor = mix(freqs[3]-.3, 1., v) * vec4(1.5*freqs[2] * t * t* t , 1.2*freqs[1] * t * t, freqs[3]*t, 1.0)+c2+starcolor;
-}
+    fragColor = lerp(freqs[3]-.3, 1., v) * float4(1.5*freqs[2] * t * t* t , 1.2*freqs[1] * t * t, freqs[3]*t, 1.0)+c2+starcolor;
 
+
+                return fragColor;
+            }
 
             ENDCG
         }
     }
 }
+
+
+
+

@@ -1,4 +1,5 @@
-﻿Shader "Unlit/aboveClouds"
+﻿
+Shader "Skyboxx/aboveClouds"
 {
     Properties
     {
@@ -155,7 +156,9 @@ float4 raymarch( in float3 ro, in float3 rd, in float3 bgcol, in float2 px )
     }
     
     // dithered near distance
-    float t = tmin + 0.1*texelFetch( iChannel1, px&1023, 0 ).x;
+
+///    float t = tmin + 0.1*texelFetch( iChannel1, px&1023, 0 ).x;
+    float t = tmin + 0.1*tex2D( _MainTex, px&1023, 0 ).x;
     
     // raymarch loop
     float4 sum = float4(0.0);

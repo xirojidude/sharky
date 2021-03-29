@@ -1,10 +1,11 @@
-﻿Shader "Unlit/LunaDebris"
+﻿
+Shader "Skybox/LunaDebris"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("tex2D", 2D) = "white" {}
     }
-    SubShader
+   SubShader
     {
         Tags { "RenderType"="Opaque" }
         LOD 100
@@ -19,38 +20,26 @@
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+             v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
-            }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
             }
 
 /*
@@ -91,18 +80,18 @@
 #define SMOOTHING 
 
 // Rotation matrix.
-const mat2 rM = mat2(.7071, .7071, -.7071, .7071); 
+const float2x2 rM = float2x2(.7071, .7071, -.7071, .7071); 
 
 // 2x2 matrix rotation. Note the absence of "cos." It's there, but in disguise, and comes courtesy
 // of Fabrice Neyret's "ouside the box" thinking. :)
-mat2 rot2( float a ){ vec2 v = sin(vec2(1.570796, 0) + a);  return mat2(v, -v.y, v.x); }
+float2x2 rot2( float a ){ float2 v = sin(float2(1.570796, 0) + a);  return float2x2(v, -v.y, v.x); }
 
 // Tri-Planar blending function. Based on an old Nvidia tutorial.
-vec3 tex3D( sampler2D tex, in vec3 p, in vec3 n ){
+float3 tex3D( sampler2D tex, in float3 p, in float3 n ){
   
     n = max(abs(n), 0.001);//n = max((abs(n) - 0.2)*7., 0.001); //  etc.
     n /= (n.x + n.y + n.z ); 
-    p = (texture(tex, p.yz)*n.x + texture(tex, p.zx)*n.y + texture(tex, p.xy)*n.z).xyz;
+    p = (tex2D(tex, p.yz)*n.x + tex2D(tex, p.zx)*n.y + tex2D(tex, p.xy)*n.z).xyz;
     return p*p;
 }
 
@@ -110,46 +99,46 @@ vec3 tex3D( sampler2D tex, in vec3 p, in vec3 n ){
 float smaxP(float a, float b, float s){
     
     float h = clamp( 0.5 + 0.5*(a-b)/s, 0., 1.);
-    return mix(b, a, h) + h*(1.0-h)*s;
+    return lerp(b, a, h) + h*(1.0-h)*s;
 }
 
 // IQ's smooth minium function. 
-vec2 sminP(vec2 a, vec2 b , float s){
+float2 sminP(float2 a, float2 b , float s){
     
-    vec2 h = clamp( 0.5 + 0.5*(b-a)/s, 0. , 1.);
-    return mix(b, a, h) - h*(1.0-h)*s;
+    float2 h = clamp( 0.5 + 0.5*(b-a)/s, 0. , 1.);
+    return lerp(b, a, h) - h*(1.0-h)*s;
 }
 
 // IQ's smooth minium function. 
 float sminP(float a, float b , float s){
     
     float h = clamp( 0.5 + 0.5*(b-a)/s, 0. , 1.);
-    return mix(b, a, h) - h*(1.0-h)*s;
+    return lerp(b, a, h) - h*(1.0-h)*s;
 }
 
 // Cellular tile setup. Draw four overlapping objects (spheres, in this case) 
 // at various positions throughout the tile.
  
-float drawObject(in vec3 p){
+float drawObject(in float3 p){
   
-    p = fract(p)-.5;
+    p = frac(p)-.5;
     return dot(p, p);
     
 }
 
    
-float cellTile(in vec3 p){
+float cellTile(in float3 p){
 
    
-    vec4 v, d; 
+    float4 v, d; 
     
-    d.x = drawObject(p - vec3(.81, .62, .53));
-    p.xy *= rM;
-    d.y = drawObject(p - vec3(.6, .82, .64));
-    p.yz *= rM;
-    d.z = drawObject(p - vec3(.51, .06, .70));
-    p.zx *= rM;
-    d.w = drawObject(p - vec3(.12, .62, .64));
+    d.x = drawObject(p - float3(.81, .62, .53));
+    p.xy = mul(p.xy,rM);
+    d.y = drawObject(p - float3(.6, .82, .64));
+    p.yz = mul(p.yz,rM);
+    d.z = drawObject(p - float3(.51, .06, .70));
+    p.zx = mul(p.zx,rM);
+    d.w = drawObject(p - float3(.12, .62, .64));
 
     // Obtaining the minimum distance.
     #ifdef SMOOTHING
@@ -169,32 +158,32 @@ float cellTile(in vec3 p){
 
 
 // The path is a 2D sinusoid that varies over time, depending upon the frequencies, and amplitudes.
-vec2 path(in float z){ 
+float2 path(in float z){ 
     
    
-    //return vec2(0); // Straight.
+    //return float2(0); // Straight.
     float a = sin(z * 0.11);
     float b = cos(z * 0.14);
-    return vec2(a*4. -b*1.5, b*1.7 + a*1.5); 
-    //return vec2(a*4. -b*1.5, 0.); // Just X.
-    //return vec2(0, b*1.7 + a*1.5); // Just Y.
+    return float2(a*4. -b*1.5, b*1.7 + a*1.5); 
+    //return float2(a*4. -b*1.5, 0.); // Just X.
+    //return float2(0, b*1.7 + a*1.5); // Just Y.
 }
 
 
 // Compact, self-contained version of IQ's 3D value noise function.
-float n3D(vec3 p){
-    const vec3 s = vec3(7, 157, 113);
-    vec3 ip = floor(p); p -= ip; 
-    vec4 h = vec4(0., s.yz, s.y + s.z) + dot(ip, s);
+float n3D(float3 p){
+    const float3 s = float3(7, 157, 113);
+    float3 ip = floor(p); p -= ip; 
+    float4 h = float4(0., s.yz, s.y + s.z) + dot(ip, s);
     p = p*p*(3. - 2.*p); //p *= p*p*(p*(p * 6. - 15.) + 10.);
-    h = mix(fract(sin(h)*43758.5453), fract(sin(h + s.x)*43758.5453), p.x);
-    h.xy = mix(h.xz, h.yw, p.y);
-    return mix(h.x, h.y, p.z); // Range: [0, 1].
+    h = lerp(frac(sin(h)*43758.5453), frac(sin(h + s.x)*43758.5453), p.x);
+    h.xy = lerp(h.xz, h.yw, p.y);
+    return lerp(h.x, h.y, p.z); // Range: [0, 1].
 }
 
 // The debris field. I'll tidy it up later. In general, this is a terrible 
 // distance field to hone in on. I'm come back to it later and rework it.
-float map(vec3 p){
+float map(float3 p){
     
     // Warping the whole field around the path.
     p.xy -= path(p.z);
@@ -202,7 +191,7 @@ float map(vec3 p){
     p/=2.;
     
     // Mutated, first order cellular object... the rocks.
-    vec3 q = p + (cos(p*2.52 - sin(p.zxy*3.5)))*.2;
+    float3 q = p + (cos(p*2.52 - sin(p.zxy*3.5)))*.2;
     float sf = max(cellTile(q/5.), 0.); 
     
     // Mutated squashed diamond tube. Used to run the camera through.
@@ -226,18 +215,18 @@ float map(vec3 p){
 
 // Surface bump function. I'm reusing the "cellTile" function, but absoulte sinusoidals
 // would do a decent job too.
-float bumpSurf3D( in vec3 p, in vec3 n){
+float bumpSurf3D( in float3 p, in float3 n){
     
     return (cellTile(p/2.))*.8 + (cellTile(p*1.5))*.2;
     
 }
 
 // Standard function-based bump mapping function.
-vec3 doBumpMap(in vec3 p, in vec3 nor, float bumpfactor){
+float3 doBumpMap(in float3 p, in float3 nor, float bumpfactor){
     
-    const vec2 e = vec2(0.001, 0);
+    const float2 e = float2(0.001, 0);
     float ref = bumpSurf3D(p, nor);                 
-    vec3 grad = (vec3(bumpSurf3D(p - e.xyy, nor),
+    float3 grad = (float3(bumpSurf3D(p - e.xyy, nor),
                       bumpSurf3D(p - e.yxy, nor),
                       bumpSurf3D(p - e.yyx, nor) )-ref)/e.x;                     
           
@@ -247,17 +236,17 @@ vec3 doBumpMap(in vec3 p, in vec3 nor, float bumpfactor){
     
 }
 
-// Texture bump mapping. Four tri-planar lookups, or 12 texture lookups in total. I tried to 
+// tex2D bump mapping. Four tri-planar lookups, or 12 tex2D lookups in total. I tried to 
 // make it as concise as possible. Whether that translates to speed, or not, I couldn't say.
-vec3 doBumpMap( sampler2D tx, in vec3 p, in vec3 n, float bf){
+float3 doBumpMap( sampler2D tx, in float3 p, in float3 n, float bf){
    
-    const vec2 e = vec2(0.001, 0);
+    const float2 e = float2(0.001, 0);
     
-    // Three gradient vectors rolled into a matrix, constructed with offset greyscale texture values.    
-    mat3 m = mat3( tex3D(tx, p - e.xyy, n), tex3D(tx, p - e.yxy, n), tex3D(tx, p - e.yyx, n));
+    // Three gradient floattors rolled into a matrix, constructed with offset greyscale tex2D values.    
+    float3x3 m = float3x3( tex3D(tx, p - e.xyy, n), tex3D(tx, p - e.yxy, n), tex3D(tx, p - e.yyx, n));
     
-    vec3 g = vec3(0.299, 0.587, 0.114)*m; // Converting to greyscale.
-    g = (g - dot(tex3D(tx,  p , n), vec3(0.299, 0.587, 0.114)) )/e.x; g -= n*dot(n, g);
+    float3 g = mul(float3(0.299, 0.587, 0.114),m); // Converting to greyscale.
+    g = (g - dot(tex3D(tx,  p , n), float3(0.299, 0.587, 0.114)) )/e.x; g -= n*dot(n, g);
                       
     return normalize( n + g*bf ); // Bumped normal. "bf" - bump factor.
     
@@ -265,7 +254,7 @@ vec3 doBumpMap( sampler2D tx, in vec3 p, in vec3 n, float bf){
 
 
 // Basic raymarcher.
-float trace(in vec3 ro, in vec3 rd){
+float trace(in float3 ro, in float3 rd){
 
     float t = 0.0, h;
     for(int i = 0; i < 128; i++){
@@ -288,7 +277,7 @@ float trace(in vec3 ro, in vec3 rd){
 //
 // Hemispherical SDF AO - https://www.shadertoy.com/view/4sdGWN
 // Alien Cocoons - https://www.shadertoy.com/view/MsdGz2
-float calculateAO( in vec3 p, in vec3 n )
+float calculateAO( in float3 p, in float3 n )
 {
     float ao = 0.0, l;
     const float maxDist = 2.;
@@ -296,7 +285,7 @@ float calculateAO( in vec3 p, in vec3 n )
     //const float falloff = 0.9;
     for( float i=1.; i< nbIte+.5; i++ ){
     
-        l = (i*.75 + fract(cos(i)*45758.5453)*.25)/nbIte*maxDist;
+        l = (i*.75 + frac(cos(i)*45758.5453)*.25)/nbIte*maxDist;
         
         ao += (l - map( p + n*l ))/(1.+ l);// / pow(1.+l, falloff);
     }
@@ -307,23 +296,23 @@ float calculateAO( in vec3 p, in vec3 n )
 
 // Tetrahedral normal, to save a couple of "map" calls. Courtesy of IQ. In instances where there's no descernible 
 // aesthetic difference between it and the six tap version, it's worth using.
-vec3 calcNormal(in vec3 p){
+float3 calcNormal(in float3 p){
 
     // Note the slightly increased sampling distance, to alleviate artifacts due to hit point inaccuracies.
-    vec2 e = vec2(0.0025, -0.0025); 
+    float2 e = float2(0.0025, -0.0025); 
     return normalize(e.xyy * map(p + e.xyy) + e.yyx * map(p + e.yyx) + e.yxy * map(p + e.yxy) + e.xxx * map(p + e.xxx));
 }
 
 /*
 // Standard normal function. 6 taps.
-vec3 calcNormal(in vec3 p) {
-    const vec2 e = vec2(0.005, 0);
-    return normalize(vec3(map(p + e.xyy) - map(p - e.xyy), map(p + e.yxy) - map(p - e.yxy), map(p + e.yyx) - map(p - e.yyx)));
+float3 calcNormal(in float3 p) {
+    const float2 e = float2(0.005, 0);
+    return normalize(float3(map(p + e.xyy) - map(p - e.xyy), map(p + e.yxy) - map(p - e.yxy), map(p + e.yyx) - map(p - e.yyx)));
 }
 */
 
 // Shadows.
-float shadows(in vec3 ro, in vec3 rd, in float start, in float end, in float k){
+float shadows(in float3 ro, in float3 rd, in float start, in float end, in float k){
 
     float shade = 1.0;
     const int shadIter = 24; 
@@ -346,56 +335,66 @@ float shadows(in vec3 ro, in vec3 rd, in float start, in float end, in float k){
 }
 
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord ){
+
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 fragCoord = v.vertex;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
     
     // Screen coordinates.
-    vec2 uv = (fragCoord - iResolution.xy*0.5)/iResolution.y;
+//    float2 uv = (fragCoord - iResolution.xy*0.5)/iResolution.y;
     
     // Camera Setup.
-    vec3 lookAt = vec3(0, 0, iTime*8. + 0.1);  // "Look At" position.
-    vec3 camPos = lookAt + vec3(0.0, 0.0, -0.1); // Camera position, doubling as the ray origin.
+    float3 lookAt = rd; //float3(0, 0, iTime*8. + 0.1);  // "Look At" position.
+    float3 camPos = ro; //lookAt + float3(0.0, 0.0, -0.1); // Camera position, doubling as the ray origin.
 
  
     // Light positioning. The positioning is fake. Obviously, the light source would be much 
     // further away, so illumination would be relatively constant and the shadows more static.
     // That's what direct lights are for, but sometimes it's nice to get a bit of a point light 
     // effect... but don't move it too close, or your mind will start getting suspicious. :)
-    vec3 lightPos = camPos + vec3(0, 7, 35.);
+    float3 lightPos = camPos + float3(0, 7, 35.);
 
     // Using the Z-value to perturb the XY-plane.
-    // Sending the camera, "look at," and two light vectors down the tunnel. The "path" function is 
+    // Sending the camera, "look at," and two light floattors down the tunnel. The "path" function is 
     // synchronized with the distance function. Change to "path2" to traverse the other tunnel.
     lookAt.xy += path(lookAt.z);
     camPos.xy += path(camPos.z);
     //lightPos.xy += path(lightPos.z);
 
-    // Using the above to produce the unit ray-direction vector.
+    // Using the above to produce the unit ray-direction floattor.
     float FOV = PI/3.; // FOV - Field of view.
-    vec3 forward = normalize(lookAt-camPos);
-    vec3 right = normalize(vec3(forward.z, 0., -forward.x )); 
-    vec3 up = cross(forward, right);
+    float3 forward = normalize(lookAt-camPos);
+    float3 right = normalize(float3(forward.z, 0., -forward.x )); 
+    float3 up = cross(forward, right);
 
     // rd - Ray direction.
-    vec3 rd = normalize(forward + FOV*uv.x*right + FOV*uv.y*up);
+    //float3 rd = normalize(forward + FOV*uv.x*right + FOV*uv.y*up);
     
     // Lens distortion.
-    //vec3 rd = (forward + FOV*uv.x*right + FOV*uv.y*up);
-    //rd = normalize(vec3(rd.xy, rd.z - length(rd.xy)*.25));    
+    //float3 rd = (forward + FOV*uv.x*right + FOV*uv.y*up);
+    //rd = normalize(float3(rd.xy, rd.z - length(rd.xy)*.25));    
     
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.
-    rd.xy = rot2( path(lookAt.z).x/16. )*rd.xy;
+    rd.xy = mul(rot2( path(lookAt.z).x/16. ),rd.xy);
 
     /*    
     // Mouse controls, as per TambakoJaguar's suggestion.
     // Works better if the line above is commented out.   
-    vec2 ms = vec2(0);
+    float2 ms = float2(0);
     if (iMouse.z > 1.0) ms = (2.*iMouse.xy - iResolution.xy)/iResolution.xy;
-    vec2 a = sin(vec2(1.5707963, 0) - ms.x); 
-    mat2 rM = mat2(a, -a.y, a.x);
+    float2 a = sin(float2(1.5707963, 0) - ms.x); 
+    float2x2 rM = float2x2(a, -a.y, a.x);
     rd.xz = rd.xz*rM; 
-    a = sin(vec2(1.5707963, 0) - ms.y); 
-    rM = mat2(a, -a.y, a.x);
+    a = sin(float2(1.5707963, 0) - ms.y); 
+    rM = float2x2(a, -a.y, a.x);
     rd.yz = rd.yz*rM;
     */ 
     
@@ -405,31 +404,31 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
 
     
     // Initialize the scene color.
-    vec3 sceneCol = vec3(0);
+    float3 sceneCol = float3(0,0,0);
     
     // The ray has effectively hit the surface, so light it up.
     if(t<FAR){
     
     
         // Surface position and surface normal.
-        vec3 sp = camPos + rd*t;
+        float3 sp = camPos + rd*t;
         
         // Voxel normal.
-        //vec3 sn = -(mask * sign( rd ));
-        vec3 sn = calcNormal(sp);
+        //float3 sn = -(mask * sign( rd ));
+        float3 sn = calcNormal(sp);
         
         // Sometimes, it's necessary to save a copy of the unbumped normal.
-        vec3 snNoBump = sn;
+        float3 snNoBump = sn;
         
-        // I try to avoid it, but it's possible to do a texture bump and a function-based
+        // I try to avoid it, but it's possible to do a tex2D bump and a function-based
         // bump in succession. It's also possible to roll them into one, but I wanted
         // the separation... Can't remember why, but it's more readable anyway.
         //
-        // Texture scale factor.
+        // tex2D scale factor.
         const float tSize0 = 1./2.;
-        // Texture-based bump mapping.
-        sn = doBumpMap(iChannel0, sp*tSize0, sn, 0.1);
-        vec3 tsp =  sp;// + vec3(0, 0, iTime/8.);// + vec3(path(sp.z), 0.)
+        // tex2D-based bump mapping.
+        sn = doBumpMap(_MainTex, sp*tSize0, sn, 0.1);
+        float3 tsp =  sp;// + float3(0, 0, iTime/8.);// + float3(path(sp.z), 0.)
 
         // Function based bump mapping. Comment it out to see the under layer. It's pretty
         // comparable to regular beveled Voronoi... Close enough, anyway.
@@ -440,13 +439,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
         float ao = calculateAO(sp, sn);//*.75 + .25;
 
         
-        // Light direction vectors.
-        vec3 ld = lightPos-sp;
+        // Light direction floattors.
+        float3 ld = lightPos-sp;
 
         // Distance from respective lights to the surface point.
         float lDist = max(length(ld), 0.001);
         
-        // Normalize the light direction vectors.
+        // Normalize the light direction floattors.
         ld /= lDist;
         
         
@@ -467,8 +466,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
         float fre = pow( clamp(dot(sn, rd) + 1., .0, 1.), 1.);
 
         // Object texturing, coloring and shading.
-        vec3 texCol = vec3(.8, .9, 1.);
-        texCol *= min(tex3D(iChannel0, sp*tSize0, sn)*3.5, 1.);
+        float3 texCol = float3(.8, .9, 1.);
+        texCol *= min(tex3D(_MainTex, sp*tSize0, sn)*3.5, 1.);
         texCol *= bumpSurf3D(sp, sn)*.5 + .5;
         
         // Shadows.
@@ -479,7 +478,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
         
         // Adding a touch of Fresnel for a bit of space glow... I'm not so
         // sure if that's a thing, but it looks interesting. :)
-        sceneCol += texCol*vec3(.8, .95, 1)*pow(fre, 1.)*.5;
+        sceneCol += texCol*float3(.8, .95, 1)*pow(fre, 1.)*.5;
 
 
         // Shading.
@@ -492,14 +491,16 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
        
     // Blend in a bit of light fog for atmospheric effect. I really wanted to put a colorful, 
     // gradient blend here, but my mind wasn't buying it, so dull, blueish grey it is. :)
-    vec3 fog = vec3(.6, .8, 1)/2.*(rd.y*.5 + .5);    
-    sceneCol = mix(sceneCol, fog, smoothstep(0., .95, t/FAR)); // exp(-.002*t*t), etc. fog.zxy
+    float3 fog = float3(.6, .8, 1)/2.*(rd.y*.5 + .5);    
+    sceneCol = lerp(sceneCol, fog, smoothstep(0., .95, t/FAR)); // exp(-.002*t*t), etc. fog.zxy
 
     // Clamp and present the badly gamma corrected pixel to the screen.
-    fragColor = vec4(sqrt(clamp(sceneCol, 0., 1.)), 1.0);
+    fragColor = float4(sqrt(clamp(sceneCol, 0., 1.)), 1.0);
     
-}
-            
+                return fragColor;
+            }
+
+
             ENDCG
         }
     }

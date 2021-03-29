@@ -213,7 +213,7 @@ float3 aces_tonemap(float3 color){
     float3 R = reflect(ray, N);
     float fresnel = (0.04 + (1.0-0.04)*(pow(1.0 - max(0.0, dot(-N, ray)), 5.0)));
     
-    float3 C = fresnel * getatm(R) * 2.0 + fresnel * sun(R);
+    float3 C = fresnel * getatm(R) * 1.0 + fresnel * sun(R);
     //tonemapping
     C = aces_tonemap(C);
     
