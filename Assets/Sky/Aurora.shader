@@ -172,7 +172,7 @@
 
 
 
-                float2 uv = v.posWorld.xz*.0001;
+                float2 uv = v.posWorld.xz*.01;
                 
                 
                 float3 col = float3(0.,0.,0.);

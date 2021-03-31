@@ -16,8 +16,6 @@ Shader "Skybox/AsteroidAbduction"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 // @author Jan <LJ> Scheurer
@@ -52,16 +50,34 @@ float3 ro,rs;
 float rand(float2 p){return frac(sin(dot(float2(12.404,48.31243),p))*42634.653123);}
 float rand(float3 p){return frac(sin(dot(float3(12.404,23.5213,48.31243),p))*42634.653123);}
 const float2 O=float2(1,0);
-float noise(float2 p){return tex2D(_MainTex1,p/64.).r;}
+float noise(float2 p){
+    return tex2D(_MainTex1,p/64.).r;
+}
+
 float noise(float3 p){
     float3 b=floor(p),f=frac(p);return lerp(
         lerp(lerp(rand(b+O.yyy),rand(b+O.xyy),f.x),lerp(rand(b+O.yxy),rand(b+O.xxy),f.x),f.y),
         lerp(lerp(rand(b+O.yyx),rand(b+O.xyx),f.x),lerp(rand(b+O.yxx),rand(b+O.xxx),f.x),f.y),f.z);
 }
-float gn(float2 p){return tex2D(_MainTex2,p/128.).r*1.2+tex2D(_MainTex1,p/32.).r*.1;}
-float2x2 r2d(float a){float sa=sin(a),ca=cos(a);return float2x2(ca,sa,-sa,ca);}
-float bmin(float a,float b,float k){return min(min(a,b),max(a,b)-k);}
-float2 amod(float2 p,float a){a=(atan2(p.x,p.y))%a-a*.5;return float2(cos(a),sin(a))*length(p);}
+
+float gn(float2 p){
+    return tex2D(_MainTex2,p/128.).r*1.2+tex2D(_MainTex1,p/32.).r*.1;
+}
+
+float2x2 r2d(float a){
+    float sa=sin(a),ca=cos(a);
+    return float2x2(ca,sa,-sa,ca);
+}
+
+float bmin(float a,float b,float k){
+    return min(min(a,b),max(a,b)-k);
+}
+
+float2 amod(float2 p,float a){
+    a=(atan2(p.x,p.y))%a-a*.5;
+    return float2(cos(a),sin(a))*length(p);
+}
+
 float map(float3 p){
     float a=0.,cid=rand(floor(p.xz/20.+.5)*10.),d=p.y+gn(p.xz*.1)*4.-1.;
     if(d<.5)
@@ -91,9 +107,14 @@ float map(float3 p){
     );
 }
 const float2 N=float2(.005,0);
+
 float3 render(float3 rd){
     float md;float3 mp=ro;
-    for(int i=0;i<70;i++)if(mp+=rd*(md=map(mp)),md<.001)break;
+    [loop]
+    for(int i=0;i<70;i++) {
+        if(mp+=rd*(md=map(mp)),md<.001)
+            break;
+    }
     float3
         n=normalize(map(mp)-float3(map(mp-N.xyy),map(mp-N.yxy),map(mp-N.yyx))),
         lp=float3(-5.,9.,2.),
@@ -104,6 +125,9 @@ float3 render(float3 rd){
         falloff=max(1.-length(lp-mp)*.07,0.)
     ;
     falloff*=falloff;
+
+
+ao=.5;
     return pow(tex2D(_MainTex2,mp.xz*.0005).rgb,float3(3.,3,3))+
         lerp(
             tex2D(_MainTex2,mp.xz*.2).rgb*max(dot(n,l),0.)*3.*.03+tex2D(_MainTex2,mp.xz).rgb*ao*.0375,
@@ -122,7 +146,7 @@ float3 render(float3 rd){
                 fixed4 fragColor = tex2D(_MainTex1, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                ro = _WorldSpaceCameraPos.xyz+float3(-7.,-.5,13);                                             // ray origin
 
 float2 p=float2(1,1);
 float2 uv=float2(1,1);
@@ -135,18 +159,9 @@ float2 uv=float2(1,1);
     rd.yz=mul(rd.yx,r2d(-.35));
     ro.xz=mul(ro.xz,rt);
     rd.xz=mul(rd.xz,rt);
-    fragColor=float4(0,0,0,0);
-    #ifdef ANAGLYPH
-    float focal=-.015;
-    rs=rd;
-    rs.xz=mul(rs.xz,r2d(focal));
-    fragColor.rgb += render(rs)*float3(1,0,0);
-    ro.xz+=mul(float2(.035,0),rt);
-    rs.xz=mul(rd.xz,r2d(-focal));
-    fragColor.rgb += render(rs)*float3(0,1,1);
-    #else
+    fragColor=float4(0.2,0.2,0.2,1);
     fragColor.rgb += render(rd);
-    #endif
+
  //   fragColor.rgb = pow(fragColor.rgb,float3(1./2.2,1./2.2,1./2.2));
 //    fragColor.rgb = mul(fragColor.rgb, 
 //       float3(1.1,1.1,1.)*.9*max(1.-length(p)*.45+.7*uv.y*smoothstep(-.1,0.2,max(abs(p.x-.65-p.y*.2)-.32,p.y+p.x*.2-.5))*max(1.-abs(p.x-.8),0.)*2.*gn(p.xx*5.-p.y),0.)

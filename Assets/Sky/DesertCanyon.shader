@@ -5,6 +5,8 @@ Shader "Skybox/DesertCanyon"
     {
         _MainTex ("tex2D", 2D) = "white" {}
         _MainTex2 ("tex2D", 2D) = "white" {}
+        _SunDir ("Cloud Color", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -23,6 +25,7 @@ Shader "Skybox/DesertCanyon"
 
             uniform sampler2D _MainTex; 
             uniform sampler2D _MainTex2; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -284,6 +287,7 @@ float softShadow(in float3 ro, in float3 rd, in float start, in float end, in fl
 
     // Max shadow iterations - More iterations make nicer shadows, but slow things down. Obviously, the lowest 
     // number to give a decent shadow is the best one to choose. 
+    [loop]
     for (int i=0; i<maxIterationsShad; i++){
         // End, or maximum, should be set to the distance from the light to surface point. If you go beyond that
         // you may hit a surface not between the surface and the light.
@@ -438,7 +442,7 @@ float curve(in float3 p){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
 
 
     
@@ -448,7 +452,7 @@ float curve(in float3 p){
     // Camera Setup.
     float3 lookAt = float3(0, 0, _Time.y*8.);  // "Look At" position.
  //   float3 
- ro = lookAt + float3(0, 0, -.25); // Camera position, doubling as the ray origin.
+// ro =// lookAt + float3(0, 0, -.25); // Camera position, doubling as the ray origin.
  
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera and "look at" floattors down the tunnel. The "path" function is 
@@ -464,7 +468,7 @@ float curve(in float3 p){
 
     // rd - Ray direction.
 //    float3 
-rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
+//rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
     
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.
@@ -475,7 +479,7 @@ rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
     // Usually, you'd just make this a unit directional light, and be done with it, but I
     // like some of the angular subtleties of point lights, so this is a point light a
     // long distance away. Fake, and probably not advisable, but no one will notice.
-    float3 lp = float3(FAR*.5, FAR, FAR) + float3(0, 0, ro.z);
+    float3 lp = _SunDir*FAR + float3(0, 0, ro.z); //float3(FAR*.5, FAR, FAR) + float3(0, 0, ro.z);
  
 
     // Raymarching, using Nimitz's "Log Bisection" method. Very handy on stubborn surfaces. :)
@@ -483,7 +487,8 @@ rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
     
     // Standard sky routine. Worth learning. For outdoor scenes, you render the sky, then the
     // terrain, then lerp together with a fog falloff. Pretty straight forward.
-    float3 sky = getSky(ro, rd, normalize(lp - ro));
+//    float3 sky = getSky(ro, rd, normalize(lp - ro));
+    float3 sky = getSky(ro, rd, _SunDir);
     
     // The terrain color. Can't remember why I set it to sky. I'm sure I had my reasons.
     float3 col = sky;
@@ -540,7 +545,7 @@ rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
         // tex2Ds appear far more crisp. It requires just a few lines in the backend code, and doesn't 
         // appear to effect frame rate, but I'm assuming the developers have their reasons. Anyway, this
         // line attempts to put a little definition back in, but it's definitely not the same thing. :)     
-        col = clamp(col + noise3D(sp*48.)*.3 - .15, 0., 1.);
+//        col = clamp(col + noise3D(sp*48.)*.3 - .15, 0., 1.);
         
         // Edit: This shader needs gamma correction, so I've hacked this and a postprocessing line
         // in to counter the dark shading... I'll do it properly later.
@@ -580,7 +585,7 @@ rd = normalize(forward + FOV*u.x*right + FOV*u.y*up);
     // so you multiply by 16 to give it a zero to one range. This one has been toned down with a power
     // term to give it more subtlety.
     u =  float2(1,1); //fragCoord/iResolution.xy;
-    col *= pow(16.*u.x*u.y*(1. - u.x)*(1. - u.y) , .0625);
+//    col *= pow(16.*u.x*u.y*(1. - u.x)*(1. - u.y) , .0625);
 
     // Done.
     fragColor = float4(clamp(col, 0., 1.), 1);

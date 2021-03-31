@@ -1,4 +1,6 @@
-﻿Shader "Unlit/TransparentIsoceles"
+﻿
+
+Shader "Skybox/TransparentIsoceles"
 {
     Properties
     {
@@ -19,41 +21,27 @@
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
             }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
-            }
-
-
 
 /*
 
@@ -71,12 +59,12 @@
 
 // Cheap organic distance field - partitioned into horizontal slices.
 //
-float m(vec3 p)
+float m(float3 p)
 { 
     // Moving the scene itself forward - as opposed to the camera - to save on some lighting
-    // calculations later on. IQ does it in one of his small examples. "iTime" - IQ's suggestion.
+    // calculations later on. IQ does it in one of his small examples. "_Time.y" - IQ's suggestion.
     // I didn't know that was an option... I need to read more. :)
-    p.z += iTime; 
+    p.z += _Time.y; 
     
     
     // Chopping the field into horizontal strips. It's quite a brutal approach, and it only works
@@ -95,12 +83,22 @@ float m(vec3 p)
     return abs(dot(p = cos(p*.6 + sin(p.zxy*1.8)), p) - 1.1);
 }
 
-void mainImage( out vec4 c, vec2 u){
 
-    // The loosely centered and normalized unit direction ray, and the origin - initialized
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 u = v.vertex;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 c = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+
+   // The loosely centered and normalized unit direction ray, and the origin - initialized
     // to zero. Characters can be saved by dropping "d" directly into the loop, but this way
     // feels cleaner to me.
-    vec3 d = vec3(u/iResolution.y - .6, 1), o = d - d;
+    float3 d = rd; //float3(u/iResolution.y - .6, 1), 
+    float3 o = ro; //d - d;
     
     // Initializing "c" to zero... in a less than satisfactory way.
     c -= c;
@@ -157,10 +155,14 @@ void mainImage( out vec4 c, vec2 u){
     // white look anyway.
     // c.xyz += d/o.z;
     ////c.zyx += .1 + d*.2; //Etc.
-    
-}
+
+
+                return c;
+            }
 
             ENDCG
         }
     }
 }
+
+

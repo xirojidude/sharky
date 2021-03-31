@@ -183,7 +183,7 @@ float3 aces_tonemap(float3 color){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz;                                             // ray origin
 
 
  //   vec2 uv = fragCoord.xy / iResolution.xy;
@@ -191,7 +191,7 @@ float3 aces_tonemap(float3 color){
     float waterdepth = 2.1;
     float3 wfloor = float3(0.0, -waterdepth, 0.0);
     float3 wceil = float3(0.0, 0.0, 0.0);
-    float3 orig = ro; //float3(0.0, 2.0, 0.0);
+    float3 orig = ro + float3(0.0, -0.0, 0.0);
     float3 ray = rd;  //getRay(uv);
     float hihit = intersectPlane(orig, ray, wceil, float3(0.0, 1.0, 0.0));
     if(ray.y >= -0.01){
@@ -208,15 +208,15 @@ float3 aces_tonemap(float3 color){
     float3 pos = orig + ray * dist;
 
     float3 N = normal(pos.xz, 0.001, waterdepth);
-    float2 velocity = N.xz * (1.0 - N.y);
+   // float2 velocity = N.xz * (1.0 - N.y);
     N = lerp(float3(0.0, 1.0, 0.0), N, 1.0 / (dist * dist * 0.01 + 1.0));
     float3 R = reflect(ray, N);
     float fresnel = (0.04 + (1.0-0.04)*(pow(1.0 - max(0.0, dot(-N, ray)), 5.0)));
     
-    float3 C = fresnel * getatm(R) * 1.0 + fresnel * sun(R);
+    float3 C = max(float3(.00,.00,.00),fresnel * getatm(R) * 2.0 + fresnel * sun(R));
+    C = (length(C)<.01) ? float3(.5,.5,.5):C; // hack to get rid of black splotches
     //tonemapping
     C = aces_tonemap(C);
-    
     fragColor = float4(C,1.0);
 
                 return fragColor;

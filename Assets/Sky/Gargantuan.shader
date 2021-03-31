@@ -98,7 +98,7 @@ BlackHole gargantua;
 Camera camera;
 
 void initScene() {
-    gargantua.position_ = float3(0.0, 0.0, -8.0 );
+    gargantua.position_ = float3(0.0, 0.0, -16.0 );
     gargantua.radius_ = 0.1;
     gargantua.ring_radius_inner_ = gargantua.radius_ + 0.8;
     gargantua.ring_radius_outer_ = 6.0;
@@ -299,8 +299,8 @@ float4 Radiance( in Ray ray )
                 float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
-                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 rd = viewDirection; //*float3(4,1,4);                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz*1.000;                                             // ray origin
 
     seed = _Time.y; ///*_Time.y +*/ // iResolution.y * fragCoord.x / iResolution.x + fragCoord.y / iResolution.y;
     

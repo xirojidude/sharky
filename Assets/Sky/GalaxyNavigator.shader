@@ -1,4 +1,5 @@
-﻿Shader "Unlit/GalaxyNavigator"
+﻿
+Shader "Skybox/GalaxyNavigator"
 {
     Properties
     {
@@ -14,10 +15,18 @@
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #define UNITY_PASS_FORWARDBASE
+            #include "UnityCG.cginc"
+            #pragma multi_compile_fwdbase_fullshadows
+            #pragma only_renderers d3d9 d3d11 glcore gles n3ds wiiu 
+            #pragma target 3.0
+
             // make fog work
-            #pragma multi_compile_fog
+            //# //pragma multi_compile_fog
 
             #include "UnityCG.cginc"
+
+            uniform sampler2D _MainTex; 
 
             struct appdata
             {
@@ -25,443 +34,265 @@
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 vertex : SV_POSITION;   //pos
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+// Galaxy shader
+//
+// Created by Frank Hugenroth  /frankenburgh/   07/2015
+// Released at nordlicht/bremen 2015
+
+#define SCREEN_EFFECT 0
+
+// random/hash function              
+float hash( float n )
+{
+  return frac(cos(n)*41415.92653);
+}
+
+// 2d noise function
+float noise( in float2 x )
+{
+  float2 p  = floor(x);
+  float2 f  = smoothstep(0.0, 1.0, frac(x));
+  float n = p.x + p.y*57.0;
+
+  return lerp(lerp( hash(n+  0.0), hash(n+  1.0),f.x),
+    lerp( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y);
+}
+
+float noise( in float3 x )
+{
+  float3 p  = floor(x);
+  float3 f  = smoothstep(0.0, 1.0, frac(x));
+  float n = p.x + p.y*57.0 + 113.0*p.z;
+
+  return lerp(lerp(lerp( hash(n+  0.0), hash(n+  1.0),f.x),
+    lerp( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),
+    lerp(lerp( hash(n+113.0), hash(n+114.0),f.x),
+    lerp( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
+}
+
+float3x3 m = float3x3( 0.00,  1.60,  1.20, -1.60,  0.72, -0.96, -1.20, -0.96,  1.28 );
+
+// fractional Brownian motion
+float fbmslow( float3 p )
+{
+  float f = 0.5000*noise( p ); p = mul(m,p*1.2);
+  f += 0.2500*noise( p ); p = mul(m,p*1.3);
+  f += 0.1666*noise( p ); p = mul(m,p*1.4);
+  f += 0.0834*noise( p ); p = mul(m,p*1.84);
+  return f;
+}
+
+float fbm( float3 p )
+{
+  float f = 0., a = 1., s=0.;
+  f += a*noise( p ); p = mul(m,p*1.149); s += a; a *= .75;
+  f += a*noise( p ); p = mul(m,p*1.41); s += a; a *= .75;
+  f += a*noise( p ); p = mul(m,p*1.51); s += a; a *= .65;
+  f += a*noise( p ); p = mul(m,p*1.21); s += a; a *= .35;
+  f += a*noise( p ); p = mul(m,p*1.41); s += a; a *= .75;
+  f += a*noise( p ); 
+  return f/s;
+}
+
+
+         fixed4 frag (v2f v) : SV_Target
             {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
-            }
+                float2 fragCoord = v.vertex;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection*.5;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz;                                             // ray origin
+
+  float time = _Time.y * 0.1;
+
+  float2 xy = -1.0 + 2.0*fragCoord.xy/float2(800,450); // / iResolution.xy;
+
+  // fade in (1=10sec), out after 8=80sec;
+  float fade = min(1., time*1.)*min(1.,max(0., 15.-time));
+  // start glow after 5=50sec
+  float fade2= max(0., time-10.)*0.37;
+  float glow = max(-.25,1.+pow(fade2, 10.) - 0.001*pow(fade2, 25.));
+  
+  
+  // get camera position and view direction
+  float3 campos = float3(500.0, 850., -.0-cos((time-1.4)/2.)*2000.); // moving
+  float3 camtar = float3(0., 0., 0.);
+  
+  float roll = 0.34;
+  float3 cw = normalize(camtar-campos);
+  float3 cp = float3(sin(roll), cos(roll),0.0);
+  float3 cu = normalize(cross(cw,cp));
+  float3 cv = normalize(cross(cu,cw));
+  //float3 
+//  rd = normalize( xy.x*cu + xy.y*cv + 1.6*cw );
 
 
-#define get(i)texture(iChannel0,vec2(i+.5,.5)/iChannelResolution[0].xy,-100.0)
+  float3 light   = normalize( float3(  0., 0.,  0. )-campos );
+  float sundot = clamp(dot(light,rd),0.0,1.0);
 
-//abriceNeyret2 Black Body...  https://www.shadertoy.com/view/4tdGWM
-vec3 blackBody(float k
-){float T=(k*2.)*16000.
- ;vec3 c=vec3(1.,3.375,8.)/(exp((19e3*vec3(1.,1.5,2.)/T))- 1.)
- ;return c/max(c.r,max(c.g,c.b));}
+  // render sky
 
-#define noiseTextureSize 256.
+    // galaxy center glow
+    float3 col = glow*1.2*min(float3(1.0, 1.0, 1.0), float3(2.0,1.0,0.5)*pow( sundot, 100.0 ));
+    // moon haze
+    col += 0.3*float3(0.8,0.9,1.2)*pow( sundot, 8.0 );
 
-// iq noise https://www.shadertoy.com/view/4sfGzS
-float noise(vec3 x
-){vec3 p=floor(x),f=fract(x)
- ;f*=f*(3.-f-f)
- ;vec2 uv=(p.xy+vec2(37.,17.)*p.z)+ f.xy
- ,rg=textureLod(iChannel1,(uv+.5)/noiseTextureSize,-100.).yx
- ;return mix(rg.x,rg.y,f.z);}
-float pn(vec3 x
-){vec3 p=floor(x),f=fract(x)
- ;f*=f*(3.-f-f)
- ;vec2 uv=(p.xy+vec2(37.,17.)*p.z)+ f.xy
- ,rg=textureLod(iChannel1,(uv+.5)/noiseTextureSize,-100.).yx
- ;return 2.4*mix(rg.x,rg.y,f.z)-1.;}
-float bm(vec3 x
-){vec3 p=floor(x),f=fract(x)
- ;f*=f*(3.-f-f)
- ;vec2 uv=(p.xy+vec2(37.,17.)*p.z)+ f.xy
- ,rg=textureLod(iChannel1,(uv+ .5)/noiseTextureSize,-100.).yx
- ;return 1.-.82*mix(rg.x,rg.y,f.z);}
-float fpn(vec3 p){return pn(p*.06125)*.5+pn(p*.125)*.25+pn(p*.25)*.125 ;}//+pn(p*.5)*.625
-float fbm(const in vec3 p){return bm(p*.06125)*.5+bm(p*.125)*.25+bm(p*.25)*.125+bm(p*.4)*.2;}
-float smoothNoise(in vec3 q
-){const mat3 msun=mat3(0.,.8,.6,-.8,.36,-.48,-.6,-.48,.64)
- ;float f=.5000*noise(q);q=msun*q*2.01
- ;f+=.2500*noise(q);q=msun*q*2.02
- ;f+=.1250*noise(q);q=msun*q*2.03
- ;f+=.0625*noise(q)
- ;return f;}
+  // stars
+  float st = pow(fbmslow(rd.zxy*440.3), 8.0);
+  float sc = pow(fbmslow(rd.xyz*312.0), 7.0);
+  float3 stars = 85.5*float3(sc,sc,sc)*float3(st,st,st);
+  
+  // moving background fog
+    float3 cpos = 1500.*rd + float3(831.0-time*30., 321.0, 1000.0);
+    col += float3(0.4, 0.5, 1.0) * ((fbmslow( cpos*0.0035 ) - .5));
 
-// otaviogood's noise from https://www.shadertoy.com/view/ld2SzK
-float SpiralNoiseC(vec3 p,vec4 id
-){const float m=20.,n=inversesqrt(1.+m*m)
- ;float iter=2.,r=2.-id.x
- ;for (int i=0;i<SPIRAL_NOISE_ITER;i++
- ){r+=-abs(sin(p.y*iter)+ cos(p.x*iter))/iter
-  ;p.xy+=vec2(p.y,-p.x)*m;p.xy*=n
-  ;p.xz+=vec2(p.z,-p.x)*m;p.xz*=n
-  ;iter*=id.y+.733733;}return r;}
+  cpos += float3(831.0-time*33., 321.0, 999.);
+    col += float3(0.6, 0.3, 0.6) * 10.0*pow((fbmslow( cpos*0.0045 )), 10.0);
 
-float mapIntergalacticCloud(vec3 p,vec4 id
-){float k=2.*id.w+.1;// p/=k
- ;return k*(.5+SpiralNoiseC(p.zxy*.4132+333.,id)*3.+pn(p*8.5)*.12);}
+  cpos += float3(3831.0-time*39., 221.0, 999.0);
+    col += 0.03*float3(0.6, 0.0, 0.0) * 10.0*pow((fbmslow( cpos*0.0145 )), 2.0);
 
-#ifdef WITH_SUPERNOVA_REMNANT
+  // stars
+  cpos = 1500.*rd + float3(831.0, 321.0, 999.);
+  col += stars*fbm(cpos*0.0021);
+  
+  
+  // Clouds
+    float2 shift = float2( time*100.0, time*180.0 );
+    float4 sum = float4(0,0,0,0); 
+    float c = campos.y / rd.y; // cloud height
+    float3 cpos2 = campos - c*rd;
+    float radius = length(cpos2.xz)/1000.0;
 
-//Intersection functions (mainly iq)
-//return bool and 2 intersection distances
-bool traceSphere(v22 r,out float a,out float b//ray,near,far
-){float c=dot(r.b,r.a);b=c*c-dot(r.a,r.a)+8.
- ;if(b<0.0)return false
- ;b=sqrt(b);a=-c-b;b-=c;return b>0.;}
-//return bool,farIntersection and [edge]
-bool traceSphere(v22 r,float s,out vec2 v // b,out float e
-){v.x=dot(r.b,-r.a);v.y=v.x*v.x-dot(r.a,r.a)+s*s
- ;if(v.y<0.)return false
- ;v.y=sqrt(v.x);v.x=v.x-v.y;return v.x>0.;}
- 
-float SpiralNoiseC2(vec3 p
-){const float m=.9;// size of perpendicular vector
- ;float n=inversesqrt(1.+m*m)
- ;float r=0.,iter=2.
- ;for (int i=0;i<8;i++
- ){r+=-abs(sin(p.y*iter)+ cos(p.x*iter))/ iter //abs is optional for rigged look
-  ;p.xy+=vec2(p.y,-p.x)*m;p.xy*=n
-  ;p.xz+=vec2(p.z,-p.x)*m;p.xz*=n
-  ;iter*=1.733733;}return r;}
-float length2(vec2 p){return sqrt(p.x*p.x+p.y*p.y);}
-float length8(vec2 p){p=p*p;p=p*p;p=p*p;return pow(p.x+p.y,.125);}
-float Disk(vec3 p,vec3 t
-){vec2 q=vec2(length2(p.xy)-t.x,p.z*0.5)
- ;return max(length8(q)-t.y,abs(p.z)- t.z);}
-float mapSupernovaRemnant(vec3 p
-){p*=2.
- ;float noi=Disk(p.xzy,vec3(2.0,1.8,1.25))+fbm(p*90.)+SpiralNoiseC2(p.zxy*0.5123+100.0)*3.
- ;return abs(noi*.5)+.07;}
-#endif // WITH_SUPERNOVA_REMNANT
+    if (radius<1.8)
+    {
+      for (int q=10; q>-10; q--) // layers
+      {
+    if (sum.w>0.999) continue;
+        float c = (float(q)*8.-campos.y) / rd.y; // cloud height
+        float3 cpos = campos + c*rd;
 
-bool cylinder(vec3 ro,vec3 rd,float r,float h,out float tn,out float tf
-){float a=dot(rd.xy,rd.xy),b=dot(ro.xy,rd.xy)
- ,d=b*b- a*(dot(ro.xy,ro.xy)- r*r)
- ;if(d<0.)return false
- ;d=sqrt(d)
- ;tn=(-b- d)/a;tf=(-b+d)/a
- ;a=min(tf,tn);tf=max(tf,tn);tn=a// order roots
- ;a=ro.z+tn*rd.z
- ;b=ro.z+tf*rd.z
- ;vec2 zcap=h*vec2(.5,-.5),cap=(zcap- ro.z)/ rd.z
- ;tn=a<zcap.y?cap.y : a>zcap.x?cap.x : tn
- ;tf=b<zcap.y?cap.y : b>zcap.x?cap.x : tf
- ;return tf>0. && tf>tn;}
+      float see = dot(normalize(cpos), normalize(campos));
+    float3 lightUnvis = float3(.0,.0,.0 );
+    float3 lightVis   = float3(1.3,1.2,1.2 );
+    float3 shine = lerp(lightVis, lightUnvis, smoothstep(0.0, 1.0, see));
 
-//Awesome star by Foxes: https://www.shadertoy.com/view/4lfSzS
-float noise4q(vec4 x
-){vec4 n3=vec4(0,.25,.5,.75)
- ;vec4 p2=floor(x.wwww+n3)
- ;vec4 b=floor(x.xxxx+n3)+ floor(x.yyyy+n3)*157.+floor(x.zzzz+n3)*113.
- ;vec4 p1=b+fract(p2*.00390625)*vec4(164352.,-164352.,163840.,-163840.)
- ;p2=b+fract((p2+1.0)*.00390625)*vec4(164352.,-164352.,163840.,-163840.)
- ;vec4 f1=fract(x.xxxx+n3),f2=fract(x.yyyy+n3)
- ;f1*=f1*(3.0-f1-f1)
- ;f2*=f2*(3.0-f2-f2)
- ;vec4 n1=vec4(0,1.,157.,158.),n2=vec4(113.,114.,270.0,271.)
- ;f1=fract(x.zzzz+n3)
- ;f2=fract(x.wwww+n3)
- ;f1*=f1*(3.-2.*f1)
- ;f2*=f2*(3.-2.*f2)
- ;vec4 vs1=mix(mix(mix(h3(p1),h3(n1.yyyy+p1)    ,f1)
-          ,mix(h3(n1.zzzz+p1),h3(n1.wwww+p1)    ,f1),f2)
-          ,mix(mix(h3(n2.xxxx+p1),h3(n2.yyyy+p1),f1)
-          ,mix(h3(n2.zzzz+p1),h3(n2.wwww+p1)    ,f1),f2),f1)
- ;vec4 vs3=mix(mix(mix(h3(p2),h3(n1.yyyy+p2)    ,f1)
-          ,mix(h3(n1.zzzz+p2),h3(n1.wwww+p2)    ,f1),f2)
-          ,mix(mix(h3(n2.xxxx+p2),h3(n2.yyyy+p2),f1)
-          ,mix(h3(n2.zzzz+p2),h3(n2.wwww+p2)    ,f1),f2),f1)
- ;vs1=mix(vs1,vs3,f2)
- ;float r=dot(vs1,vec4(.25))
- ;return r*r*(3.-r-r);}
+    // border
+      float radius = length(cpos.xz)/999.;
+      if (radius>1.0)
+        continue;
 
-// rays of a star
-float ringRayNoise(v22 r,float s,float size,float anim
-){float b=dot(r.b,r.a)
- ;vec3 pr=r.b*b-r.a
- ;float c=length(pr)
- ,m=max(0.,(1.-size*abs(s-c)))
- ;pr=pr/c
- ;float n=.4,ns=1.,nd=noise4q(vec4(pr*1.0,-anim+c))*2.
- ;if (c>s
- ){n=noise4q(vec4(pr*10.0,-anim+c))
-  ;ns=noise4q(vec4(pr*50.0,-anim*2.5+ c+c))*2.;}
- ;return m*m*(m*m+n*n*nd*nd*ns);}
+    float rot = 3.00*(radius)-time;
+        cpos.xz = mul(cpos.xz,float2x2(cos(rot), -sin(rot), sin(rot), cos(rot)));
+  
+    cpos += float3(831.0+shift.x, 321.0+float(q)*lerp(250.0, 50.0, radius)-shift.x*0.2, 1330.0+shift.y); // cloud position
+    cpos *= lerp(0.0025, 0.0028, radius); // zoom
+        float alpha = smoothstep(0.50, 1.0, fbm( cpos )); // fracal cloud density
+      alpha *= 1.3*pow(smoothstep(1.0, 0.0, radius), 0.3); // fade out disc at edges
+      float3 dustcolor = lerp(float3( 2.0, 1.3, 1.0 ), float3( 0.1,0.2,0.3 ), pow(radius, .5));
+        float3 localcolor = lerp(dustcolor, shine, alpha); // density color white->gray
+      
+    float gstar = 2.*pow(noise( cpos*21.40 ), 22.0);
+    float gstar2= 3.*pow(noise( cpos*26.55 ), 34.0);
+    float gholes= 1.*pow(noise( cpos*11.55 ), 14.0);
+    localcolor += float3(1.0, 0.6, 0.3)*gstar;
+    localcolor += float3(1.0, 1.0, 0.7)*gstar2;
+    localcolor -= gholes;
+      
+        alpha = (1.0-sum.w)*alpha; // alpha/density saturation (the more a cloud layer\\\'s density, the more the higher layers will be hidden)
+        sum += float4(localcolor*alpha, alpha); // sum up weightened color
+    }
+    
+      for (int q=0; q<20; q++) // 120 layers
+      {
+    if (sum.w>0.999) continue;
+        float c = (float(q)*4.-campos.y) / rd.y; // cloud height
+        float3 cpos = campos + c*rd;
 
-//Sun Lava effect
+      float see = dot(normalize(cpos), normalize(campos));
+    float3 lightUnvis = float3(.0,.0,.0 );
+    float3 lightVis   = float3(1.3,1.2,1.2 );
+    float3 shine = lerp(lightVis, lightUnvis, smoothstep(0.0, 1.0, see));
 
-vec3 getSunColor(vec3 p,vec4 id,float time
-){float lava=smoothNoise((p+vec3(time*.03))*50.*(.5+id.z))
- ;return blackBody(.02+3.*clamp(id.x*id.x,.05,1.)*(1.- sqrt(lava)));}
+    // border
+      float radius = length(cpos.xz)/200.0;
+      if (radius>1.0)
+        continue;
 
-vec4 renderSun(v22 r,in vec4 i,in float t//ray,id,time
-){r.a*=2.
- ;// Rotate view to integrate sun rotation 
- ;// R(ro.zx,1.6-t*.5*i.w)
- ;// R(rd.zx,1.6-t*.5*i.w)
- ;vec4 c=vec4(0)
- ;if(traceSphere(r,1.,c.xy))c=vec4(getSunColor(r.a+r.b*c.x,i,t),smoothstep(0.,.2,c.y));
- ;r.a.x=ringRayNoise(r,1.0,5.-4.*i.y,t)
- ;c.a=max(c.a,clamp(r.a.x,0.,.98))
- ;c.rgb+=blackBody(i.x)*r.a.x
- ;c.rgb*=1.-.03*cos(5.*t+2.*hash(t))// twinkle
- ;return sat(c);}
+    float rot = 3.2*(radius)-time*1.1;
+        cpos.xz = mul(cpos.xz,float2x2(cos(rot), -sin(rot), sin(rot), cos(rot)));
+  
+    cpos += float3(831.0+shift.x, 321.0+float(q)*lerp(250.0, 50.0, radius)-shift.x*0.2, 1330.0+shift.y); // cloud position
+        float alpha = 0.1+smoothstep(0.6, 1.0, fbm( cpos )); // fracal cloud density
+      alpha *= 1.2*(pow(smoothstep(1.0, 0.0, radius), 0.72) - pow(smoothstep(1.0, 0.0, radius*1.875), 0.2)); // fade out disc at edges
+        float3 localcolor = float3(0.0, 0.0, 0.0); // density color white->gray
+  
+        alpha = (1.0-sum.w)*alpha; // alpha/density saturation (the more a cloud layer\\\'s density, the more the higher layers will be hidden)
+        sum += float4(localcolor*alpha, alpha); // sum up weightened color
+    }
+    }
+  float alpha = smoothstep(1.-radius*.5, 1.0, sum.w);
+    sum.rgb /= sum.w+0.0001;
+    sum.rgb -= 0.2*float3(0.8, 0.75, 0.7) * pow(sundot,10.0)*alpha;
+    sum.rgb += min(glow, 10.0)*0.2*float3(1.2, 1.2, 1.2) * pow(sundot,5.0)*(1.0-alpha);
 
-// Supernova remnant by Duke [https://www.shadertoy.com/view/MdKXzc]
+    col = lerp( col, sum.rgb , sum.w);//*pow(sundot,10.0) );
 
-#ifdef WITH_SUPERNOVA_REMNANT
+    // haze
+//  col = fade*lerp(col, float3(0.3,0.5,.9), 29.0*(pow( sundot, 50.0 )-pow( sundot, 60.0 ))/(2.+9.*abs(rd.y)));
 
-vec3 computeColorSR(float d,float r//density,radius
-){return mix(vec3(1.,.9,.8),vec3(.4,.15,.1),d)
- *mix(7.*vec3(.8,1.,1.),1.5*vec3(.48,0.53,.5),min((r+.5)/.9,1.15));}
-
-vec4 renderSupernova(v22 r
-){vec4 a=vec4(0.)//acc return
- ;float m=0.,n=0.
- ;if(traceSphere(r,m,n)
- ){float t=max(m,0.)+.01*hash(r.b)//calculate once
-  ;r.a*=3.
-  ;m=0.//acc conditional
-  ;for(int i=0;i<64;i++
-  ){if (m>.9 || a.w>.99 || t>n)break
-   ;vec3 pos=r.a+r.b*t
-   ;float d=mapSupernovaRemnant(pos)
-   ;float lDist=max(length(pos),.001)
-   ;a+=vec4(.67,.75,1.,1.)/(lDist*lDist*10.)*.0125// star 
-   ;a+=vec4(1.,.5,.25,.6)/exp(lDist*lDist*lDist*.08)*.033// bloom
-   ;const float h=.1
-   ;if(d<h
-   ){m+=(1.-m)*(h-d)+.005
-    ;vec4 c=vec4(computeColorSR(m,lDist),m*.2)
-    ;a.rgb+=a.w*a.rgb*.2;c.rgb*=c.a;a+=c*(1.- a.w);}
-   ;m+=.014
-   ;// trying to optimize step size near the camera and near the light source
-   ;t+=max(d*.1*max(min(lDist,length(r.a)),1.0),0.01);}
-  ;//a*=1./exp(l*.2)*.6; //scatter
-  ;a=sat(a)
-  ;a.xyz*=a.xyz*(3.-a.xyz-a.xyz);}return a;}
+#if SCREEN_EFFECT == 1
+    if (time<2.5)
+    {
+      // screen effect
+      float c = (col.r+col.g+col.b)* .3 * (.6+.3*cos(fragCoord.y*1.2543)) + .1*(noise((xy+time*2.)*294.)*noise((xy-time*3.)*321.));
+        c += max(0.,.08*sin(10.*time+xy.y*7.2543));
+        // flicker
+    col = float3(c, c, c) * (1.-0.5*pow(noise(float2(time*99., 0.)), 9.));
+    }
+    else
+    {
+        // bam
+        float c = clamp(1.-(time-2.5)*6., 0., 1. );
+        col = lerp(col, float3(1.,1.,1.),c);
+    }
 #endif
+    
+    // Vignetting
+//  float2 xy2 = gl_FragCoord.xy / iResolution.xy;
+//  col *= float3(.5, .5, .5) + 0.25*pow(100.0*xy2.x*xy2.y*(1.0-xy2.x)*(1.0-xy2.y), .5 ); 
 
-//Galaxy
-
-//p,1/thickness,blurAmount,blurStyle
-float spiralArm(vec3 p,float t,float a,float s
-){float r=length(p.xz)
- ,l=log(r)
- ,d=(.5/2.- abs(fract(.5*(atan(p.x,p.z)-l*4.)/pi)-.5))*2.*pi*r*(1.-l)*t
- ;return sqrt(d*d+10.*p.y*p.y*t)-(.1-.25*r)*r*.2
- -a*mix(fpn(8.*vec3(r*43.,40.*d,24.*p.y)),fpn(p*400.),s)// Perturb
- ;}
-
-void galaxyTransForm(inout vec3 o,vec4 i
-){R(o.yz,(i.y-.5))
- ;// R(o.xy,.25*i.x*iTime);
- ;}
-
-float mapGalaxy(vec3 p,vec4 id
-){float t=.2/(1.+id.x)
- ;float d1=spiralArm(p.xzy*.2,t,.2+.3*id.y,id.z)
- #ifdef WITH_DOUBLE_GALAXY
- ;if(id.z<.25
- ){float d2=spiralArm(vec3(-p.y,p.z,p.x)*.205,t,.2+.3*id.y,id.z)
-  ;return min(d2,d1);}
- #endif 
- ;return d1;}
-
-vec3 computeColor(float d,vec3 u//density,uv
-){u.x=length(u);return mix(vec3(.25,.22,.2),vec3(.1,.0375,.025),d)
- *mix(vec3(4.8,6.,6.), vec3(.96,1.06,1.),min((u.x+.5)*.5,1.15));}
-
-vec4 renderGalaxy(v22 r,in vec4 id,in bool fast
-){vec4 a=vec4(0)
- ;float min_dist=0.,max_dist=100.
- ;galaxyTransForm(r.a,id)
- ;galaxyTransForm(r.b,id)
- ;if(cylinder(r.a,r.b,3.,3.5,min_dist,max_dist)
- ){float b=0.//acc
-  ,l=max(min_dist,0.)+ .2*hash(r.b+iTime)//acc raylength
-  ;vec4 n,m//changes wiothin loop (composite vector)
-  ;for (int i=0;i<48;i++ //raymarch
-  ){if((fast&&i>20)|| b>.9 || a.w>0.99 || l>max_dist)break
-   ;vec3 u=r.a+r.b*l
-   ;float d=max(abs(mapGalaxy(3.5*u,id))+.05,.005)
-   ;const float h=.1
-   ;if(d<h
-   ){float l=h-d
-    ;l+=sat((l-mapGalaxy(u*3.5-.2*normalize(u),id))*2.5)
-    ;b+=(1.-b)*l+.005
-    ;vec4 c=vec4(computeColor(b,u),b*.25);c.rgb*=c.a;a+=c*(1.- a.w);}
-   ;b+=.014
-   ;n.xyz=u*.25
-   ;m.xyz=u*.05
-   ;m.z*=2.5
-   ;n.w=max(length(n.xyz),.0001)//max(length(n.xyz),0.001)
-   ;m.w=max(length(m.xyz),.0001)
-   ;vec3 lightColor=(1.-smoothstep(3.,4.5,n.w*n.w))
-   *mix(.07*vec3(1.,.5,.25)/n.w,.008*vec3(1.,1.7,2.)/m.w,smoothstep(.2,.7,n.w));// star in center
-   ;a.rgb+=lightColor/(n.w*20.);//bloom
-   ;d=max(d,.04)
-   ;l+=max(d*.3,.02);}
-  ;a=sat(a)
-  ;a.xyz*=a.xyz*(3.-a.xyz-a.xyz);}return a;}
-
-// Adapted from Planet Shadertoy- Reinder Nijhoff: https://www.shadertoy.com/view/4tjGRh
-vec3 renderGalaxyField(v22 r,bool fast
-){//out_id=vec3(9)
- ;float dint //changes within loop within point()
- ,l=0.       //acc rayLength
- ;vec3 h     //hash sepends on (pos) within loop
- ,o=r.a      //acc origin
- ,f=floor(o) //acc tileId pos
- ,v=1./r.b   //calculate once
- ,s=sign(r.b)//calculate once
- ,dis=(f-o+.5+s*.5)*v
- ;vec4 a=vec4(0)
- ;for(int i=0;i<GALAXY_FIELD_VOXEL_STEPS_HD;i++
- ){if(!fast||i!=0
-  ){h=hash33(f)
-   ;vec3 O=f+cl1(h,GALAXY_RADIUS)
-   ;l=point(o,r.b,O,dint)
-   ;if(dint>0. && l<GALAXY_RADIUS
-   ){vec4 c=renderGalaxy(v22((o-O)/GALAXY_RADIUS*3.,r.b),vec4(h,.5),fast)
-    ;c.rgb*=smoothstep(float(GALAXY_FIELD_VOXEL_STEPS),0.,length(r.a-f))
-    ;a+=(1.-a.w)*c
-    ;if(a.w>.99)break;}}
-  ;vec3 m=step(dis.xyz,dis.yxy)* step(dis.xyz,dis.zzx)
-  ;dis+=m*s*v;f+=m*s;}
- ;if(!fast && a.w<.99
- ){for(int i=GALAXY_FIELD_VOXEL_STEPS_HD;i<GALAXY_FIELD_VOXEL_STEPS;i++
-  ){h=hash33(f)
-   ;l=point(o,r.b,f+cl1(h,GALAXY_RADIUS),dint)
-   ;if(dint>0.
-   ){vec4 c=vec4(.9,.9,.8,1.)*(1.-smoothstep(GALAXY_RADIUS*.25,GALAXY_RADIUS*.5,l))
-    ;c.rgb*=smoothstep(float(GALAXY_FIELD_VOXEL_STEPS),0.,length(r.a-f))
-    ;a+=(1.-a.w)*c
-    ;if(a.w>.99)break;}
-   ;vec3 m=step(dis.xyz,dis.yxy)* step(dis.xyz,dis.zzx)
-   ;dis+=m*s*v;f+=m*s;}}
- ;return a.xyz;}
-
-// Adapted from Planet Shadertoy- Reinder Nijhoff:  https://www.shadertoy.com/view/4tjGRh
-vec4 renderStarField(v22 r,inout float O
-){float dint   //changes within loop within point()
- ,l=0.         //acc rayLength
- ;vec3 n=1./r.b//calculate once
- ,rs=sign(r.b) //calculate once
- ,o            //changes within loop (offset)
- ,h            //changes within loop (hash)
- ,f=floor(r.a) //changes within loop (tileId)
- ,v=(f-r.a+.5+rs*.5)*n//acc voxel coods
- ;vec4 c              //acc color intermediate
- ,a=vec4(0)           //acc color return
- ;for(int i=0;i<STAR_FIELD_VOXEL_STEPS;i++
- ){h=hash33(f)
-  ;o=cl1(h,STAR_RADIUS)
-  ;l=point(r.a,r.b,f+o,dint)
-  ;if(dint>0.
-  ){if(dint<2. && l<STAR_RADIUS
-   ){r.a=(r.a-f-o)/STAR_RADIUS,
-    #ifdef WITH_SUPERNOVA_REMNANT
-     c=h.x>.8?renderSupernova(v22(r.a,r.b)):
-    #endif
-     c=renderSun(v22(r.a,r.b),vec4(h,.5),iTime)
-    ;if (c.a>.99)O=dint
-   ;}else c=(vec4(blackBody(max(h.x-.1,.01)),1.)*(1.-smoothstep(STAR_RADIUS*.5,STAR_RADIUS,l)))
-   ;c.rgb*=smoothstep(float(STAR_FIELD_VOXEL_STEPS),.5,dint)
-   ;c.rgb*=c.a
-   ;a+=(1.-a.w)*c
-   ;if (a.w>.99)break;}
-  ;vec3 mm=step(v.xyz,v.yxy)* step(v.xyz,v.zzx)
-  ;v+=mm*rs*n
-  ;f+=mm*rs;}
- return a;}
+  fragColor = float4(col,1.0);
 
 
-//intergalactic clouds
-
-#ifdef WITH_INTERGALACTIC_CLOUDS
-
-
-// Based on "Type 2 Supernova" by Duke (https://www.shadertoy.com/view/lsyXDK)
-vec4 renderIntergalacticClouds(v22 r,float m
-){m=min(m,float(STAR_FIELD_VOXEL_STEPS)) //calculated once
- ;vec4 a=vec4(0),id=vec4(.5,.4,.16,.7)         //loop var
- ;vec3 u              //loop var
- ;float e=0.          //loop var       , edge color
- ,o=.05+.25*id.z      //calculated once, outer edge?
- ,l=hash(hash(r.b))*.1//calculated once, hashed rayLength
- ,b=smoothstep(m,0.,l)//calculated once
- ;for(int i=0;i<100;i++
- ){if(e>.9 || a.w>.99 || l>m)break
-  ;u=r.a+l*r.b
-  ;float d=abs(mapIntergalacticCloud(u,id))+.07//depends on var u
-  ,sp=4.5//quickly discarded scalar constant
-  ;sp=max(length(mod(u+sp,sp*2.)-sp),.001)
-  ;u.x=pn(.05*u)
-  ;vec3 c=mix(hsv2rgb(u.x,.5,.6),hsv2rgb(u.x+.3,.5,.6),smoothstep(2.*id.x*.5,2.*id.x*2.,sp))
-  ;a.rgb+=b*c/exp(sp*sp*sp*.08)/30.
-  ;if (d<o//color edges
-  ){e+=(1.-e)*(o-d)+.005
-   ;a.rgb+=a.w*a.rgb*.25/sp//emmissive
-   ;a+=(1.-a.w)*.02*e*b; }// uniform scale density+alpha blend in contribution 
-  ;e+=.015
-  ;l+=max(d*.08*max(min(sp,d),2.),.01);}// trying to optimize step size
- ;a=sat(a)
- ;a.xyz*=a.xyz*(3.-a.xyz-a.xyz);return a;}
-
-#endif 
-
-// Coordinate system conversions
-bool inGalaxy(vec3 u){vec3 f=floor(u)
- ;return length(u-f-cl1(hash33(f),GALAXY_RADIUS))<GALAXY_RADIUS;}
-
-v22 getCam(vec2 p
-){vec3 w=get(Bc1).xyz//is normalized on set()
- ,u=normalize(cross(w,normalize(vec3(.1*cos(.1*iTime),.3*cos(.1*iTime),1.))))
- ;return v22(get(Bc0).xyz,normalize(-p.x*u+p.y*normalize(cross(u,w))+2.*w) );}
-
-void mainImage(out vec4 o,in vec2 u
-){o.xyz=vec3(0)
- ;u=u/iResolution.xy
- ;u=u*2.-1.
- ;u.x*=iResolution.x/iResolution.y
- ;v22 r=getCam(u)
- ;vec3 galaxyId,galaxyPosU
- ;vec4 s=vec4(0)//star color
- ;float coo=get(Bvv).z
- ;coo=coo>2.5?IN_SOLAR_SYSTEM : coo>1.5?IN_GALAXY :  IN_UNIVERSE
- ;bool isU=coo==IN_UNIVERSE,isG=coo==IN_GALAXY
- ;vec3 galaxy_pos=get(Bg0).xyz
- ;if(inGalaxy(isU?r.a : g2u(galaxy_pos,r.a))
- ){vec3 roG=isU?u2g(galaxy_pos,r.a): r.a
-  ;float d=9999.
-  ;s=renderStarField(v22(roG,r.b),d)
-  #ifdef WITH_INTERGALACTIC_CLOUDS
-  ;vec4 c=renderIntergalacticClouds(v22(roG,r.b),d)
-  ;if(s.a!=0.)s=(1.-c.a)*sqrt(s)*s.a
-  ;s+=c
-  #endif 
-  ;}
- ;if(isG)r.a=g2u(galaxy_pos,r.a)
- ;vec3 colGalaxy=renderGalaxyField(r,isG)
- ;s.rgb+=colGalaxy*(1.-s.a)
- ;o.xyz=s.rgb
- ;// float digit=PrintValue(fragCoord,iResolution.xy*vec2(.0,.7),vec2(20.),galaxy_pos.x,8.,10.);
- ;// digit+=PrintValue(fragCoord,iResolution.xy*vec2(.0,.6),vec2(20.),galaxy_pos.y,8.,10.);
- ;// digit+=PrintValue(fragCoord,iResolution.xy*vec2(.0,.5),vec2(20.),galaxy_pos.z,8.,10.);
- ;// o.xyz=mix(o.xyz,vec3(1,0,0),digit)
- ;if(isU)o.xyz+=vec3(0.03,0.,.1);}
-
-
+                return fragColor;
+            }
 
             ENDCG
         }
     }
 }
+
+
+
+
+
+
+
+
