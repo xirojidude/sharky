@@ -3,10 +3,9 @@ Shader "Skyboxx/aboveClouds"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
-        iChannel0 ("Texture", 2D) = "white" {}
-        iChannel1 ("Texture", 2D) = "white" {}
-        iChannel2 ("Texture", 2D) = "white" {}
+        _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -23,40 +22,41 @@ Shader "Skyboxx/aboveClouds"
 
             #include "UnityCG.cginc"
 
+            uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
+
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+            struct v2f {
+                float4 uv : TEXCOORD0;         //posWorld
+                float4 worldPos : TEXCOORD1;
+                float4 vertex : SV_POSITION;   //pos
+                float4 screenPos : TEXCOORD2;
             };
 
-            sampler2D _MainTex;
-            sampler2D iChannel0;
-            sampler2D iChannel1;
-            sampler2D iChannel2;
-            float4 _MainTex_ST;
+            v2f vert (appdata v) {
+                appdata v2;
+                v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
+                v2f o = (v2f)0;
+                o.uv = mul(unity_ObjectToWorld, v2.vertex);
+                o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
+                o.worldPos = mul(unity_ObjectToWorld, v2.vertex);
+                o.screenPos  = ComputeScreenPos(o.vertex);
+                //o.screenPos.z = -(mul(UNITY_MATRIX_MV, vertex).z * _ProjectionParams.w);     // old calculation, as I used the depth buffer comparision for min max ray march. 
 
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
 
 // https://iquilezles.org/www/articles/derivative/derivative.htm
 
 
-// 0: one 3d texture lookup
-// 1: two 2d texture lookups with hardware interpolation
-// 2: two 2d texture lookups with software interpolation
+// 0: one 3d tex2D lookup
+// 1: two 2d tex2D lookups with hardware interpolation
+// 2: two 2d tex2D lookups with software interpolation
 #define NOISE_METHOD 1
 
 // 0: no LOD
@@ -83,17 +83,17 @@ float noise( in float3 x )
 #endif
 #if NOISE_METHOD==1
     float2 uv = (p.xy+float2(37.0,239.0)*p.z) + f.xy;
-    //float2 rg = SampleLevel(iChannel0,(uv+0.5)/256.0,0.0).yx;
-    float2 rg =tex2D(iChannel0,(uv+0.5)/256.0).yx;
+    //float2 rg = SampleLevel(_MainTex,(uv+0.5)/256.0,0.0).yx;
+    float2 rg =tex2D(_MainTex,(uv+0.5)/256.0).yx;
     return lerp( rg.x, rg.y, f.z )*2.0-1.0;
 #endif    
 #if NOISE_METHOD==2
     float3 q = float3(p);
     float2 uv = q.xy + float2(37,239)*q.z;
-    float2 rg = lerp(lerp(texelFetch(iChannel0,(uv           )&255,0),
-                      texelFetch(iChannel0,(uv+float2(1,0))&255,0),f.x),
-                  lerp(texelFetch(iChannel0,(uv+float2(0,1))&255,0),
-                      texelFetch(iChannel0,(uv+float2(1,1))&255,0),f.x),f.y).yx;
+    float2 rg = lerp(lerp(texelFetch(_MainTex,(uv           )&255,0),
+                      texelFetch(_MainTex,(uv+float2(1,0))&255,0),f.x),
+                  lerp(texelFetch(_MainTex,(uv+float2(0,1))&255,0),
+                      texelFetch(_MainTex,(uv+float2(1,1))&255,0),f.x),f.y).yx;
     return lerp( rg.x, rg.y, f.z )*2.0-1.0;
 #endif    
 }
@@ -158,10 +158,10 @@ float4 raymarch( in float3 ro, in float3 rd, in float3 bgcol, in float2 px )
     // dithered near distance
 
 ///    float t = tmin + 0.1*texelFetch( iChannel1, px&1023, 0 ).x;
-    float t = tmin + 0.1*tex2D( _MainTex, px&1023, 0 ).x;
+    float t = tmin + 0.1*tex2D( _MainTex, px).x;
     
     // raymarch loop
-    float4 sum = float4(0.0);
+    float4 sum = float4(0.0,0.0,0.0,0.0);
     for( int i=0; i<190*kDiv; i++ )
     {
        // step size
@@ -200,13 +200,13 @@ float4 raymarch( in float3 ro, in float3 rd, in float3 bgcol, in float2 px )
     return clamp( sum, 0.0, 1.0 );
 }
 
-mat3 setCamera( in float3 ro, in float3 ta, float cr )
+float3x3 setCamera( in float3 ro, in float3 ta, float cr )
 {
     float3 cw = normalize(ta-ro);
     float3 cp = float3(sin(cr), cos(cr),0.0);
     float3 cu = normalize( cross(cw,cp) );
     float3 cv = normalize( cross(cu,cw) );
-    return mat3( cu, cv, cw );
+    return float3x3( cu, cv, cw );
 }
 
 float4 render( in float3 ro, in float3 rd, in float2 px )
@@ -231,36 +231,36 @@ float4 render( in float3 ro, in float3 rd, in float2 px )
     return float4( col, 1.0 );
 }
 
-void mainImage( out float4 fragColor, in float2 fragCoord )
-{
-    float2 p = (2.0*fragCoord-iResolution.xy)/iResolution.y;
-    float2 m =                iMouse.xy      /iResolution.xy;
+
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 fragCoord = v.vertex;
+                float2 screenUV = v.screenPos.xy / v.screenPos.w;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+
+//    float2 p = (2.0*fragCoord-iResolution.xy)/iResolution.y;
+//    float2 m =                iMouse.xy      /iResolution.xy;
 
     // camera
-    float3 ro = 4.0*normalize(float3(sin(3.0*m.x), 0.8*m.y, cos(3.0*m.x))) - float3(0.0,0.1,0.0);
+//    float3 ro = 4.0*normalize(float3(sin(3.0*m.x), 0.8*m.y, cos(3.0*m.x))) - float3(0.0,0.1,0.0);
     float3 ta = float3(0.0, -1.0, 0.0);
-    mat3 ca = setCamera( ro, ta, 0.07*cos(0.25*_Time.y) );
+    float3x3 ca = setCamera( ro, ta, 0.07*cos(0.25*_Time.y) );
     // ray
-    float3 rd = ca * normalize( float3(p.xy,1.5));
+//    float3 rd = ca * normalize( float3(p.xy,1.5));
     
     fragColor = render( ro, rd, float2(fragCoord-0.5) );
-}
-
-void mainVR( out float4 fragColor, in float2 fragCoord, in float3 fragRayOri, in float3 fragRayDir )
-{
-    fragColor = render( fragRayOri, fragRayDir, float2(fragCoord-0.5) );
-}
 
 
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
+                return fragColor;
             }
+
             ENDCG
         }
     }
 }
+

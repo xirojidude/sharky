@@ -4,6 +4,9 @@ Shader "Skybox/NebulaPlxus"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+
     }
     SubShader
     {
@@ -21,6 +24,7 @@ Shader "Skybox/NebulaPlxus"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -203,15 +207,15 @@ float layer(float2 uv){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 
     //nebula
     float3 movementDirection = normalize(float3(0.01, 0.0, 1.0));
     
-    float3 rayDirection = rd; // getRayDirection(fragCoord, movementDirection);
+    float3 rayDirection = getRayDirection(fragCoord, movementDirection);
     
-    float3 globalPosition = ro; //vec3(3.14159, 3.14159, 0.0) + (iTime + 1000.0) * FLIGHT_SPEED * movementDirection;
+    float3 globalPosition = float3(3.14159, 3.14159, 0.0) + (_Time.y + 1000.0) * FLIGHT_SPEED * movementDirection;
     
     fragColor = getNebulaColor(globalPosition, rayDirection);
     

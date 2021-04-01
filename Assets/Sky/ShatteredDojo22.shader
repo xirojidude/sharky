@@ -4,6 +4,8 @@ Shader "Skybox/ShatteredDojo22"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (10.,10.,-20. ,0) 
     }
     SubShader
     {
@@ -21,6 +23,7 @@ Shader "Skybox/ShatteredDojo22"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -182,15 +185,15 @@ float3 lookAt(float3 eye, float3 tar, float2 uv)
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
  // float2 uv = float2(fragCoord.x / iResolution.x, fragCoord.y / iResolution.y);
  // uv -= 0.5;
 //  uv /= float2(iResolution.y / iResolution.x, 1);
 
-  float3 eye = float3(10.,10.,-20.);
+  float3 eye = ro; //float3(10.,10.,-20.);
   float3 tar = float3(0.,0,0);
-  //float3 rd = lookAt(eye, tar, uv);
+  //rd = lookAt(eye, tar, uv);
   float3 cp = eye;
   float st,cd;
   ray(cp,rd,st,cd);

@@ -5,6 +5,8 @@ Shader "Skybox/AsteroidAbduction"
     {
         _MainTex1 ("tex2D", 2D) = "white" {}
         _MainTex2 ("tex2D", 2D) = "white" {}
+        _SunDir ("Cloud Color", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -25,6 +27,7 @@ Shader "Skybox/AsteroidAbduction"
 
             uniform sampler2D _MainTex1; 
             uniform sampler2D _MainTex2; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -146,7 +149,7 @@ ao=.5;
                 fixed4 fragColor = tex2D(_MainTex1, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                ro = _WorldSpaceCameraPos.xyz+float3(-7.,-.5,13);                                             // ray origin
+                ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 float2 p=float2(1,1);
 float2 uv=float2(1,1);

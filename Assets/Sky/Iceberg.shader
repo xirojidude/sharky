@@ -5,6 +5,9 @@ Shader "Skybox/Iceberg"
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+
     }
     SubShader
     {
@@ -24,6 +27,8 @@ Shader "Skybox/Iceberg"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
+
 
             struct appdata
             {
@@ -323,6 +328,7 @@ float3 TraceOneRay(float3 camPos, float3 rayfloat, out float3 normal, out float3
     float3 pos = float3(0.0,0,0);
     const float smallVal = 0.00625;
     // ray marching time
+    [loop]
     for (int i = 210; i >= ZERO_TRICK; i--) // This is the count of the max times the ray actually marches.
     {
         // Step along the ray.
@@ -570,12 +576,12 @@ float3 RayTrace(in float3 ro, in float3 rd )
         fresnel = fresnel * fresnel * fresnel * fresnel * fresnel * fresnel;
         fresnel = lerp(0.05, 0.9, fresnel);
         float3 refColor = TraceOneRay(newStartPos, ref, normal, distAndMat, t);
-        finalColor += refColor * fresnel;
+ //       finalColor += refColor * fresnel;
     }
 
-    // vignette?
-    finalColor *= float3(1.0,1,1) * saturate(1.0 - length(uv/2.5));
-    finalColor *= exposure;
+//    // vignette?
+//    finalColor *= float3(1.0,1,1) * saturate(1.0 - length(uv/2.5));
+//    finalColor *= exposure;
 
     // output the final color without gamma correction - will do gamma later.
     return float3(clamp(finalColor, 0.0, 1.0));//*saturate(fade));
@@ -623,7 +629,7 @@ void BlockRender(in float2 fragCoord)
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 #ifdef NON_REALTIME_HQ_RENDER
     // Optionally render a non-realtime scene with high quality

@@ -4,7 +4,9 @@ Shader "Skybox/Cookie19"
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
-    }
+        _SunDir ("Cloud Color", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+   }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -21,6 +23,7 @@ Shader "Skybox/Cookie19"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -104,6 +107,7 @@ float2 mp( float3 p )
 float2 tr( float3 ro,float3 rd )
 {
   float2 h,t=float2(.1,.1);
+  [loop]
   for(int i=0;i<64;i++){             //for(int i=0;i<128;i++){
     h=mp(ro+rd*t.x);
     if(h.x<.0001||t.x>30.) break;
@@ -123,7 +127,7 @@ float2 tr( float3 ro,float3 rd )
                 fixed4 fragColor = tex2D(_MainTex, v2.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
   //float2 uv=(fragCoord.xy/iResolution.xy-0.5)/float2(iResolution.y/iResolution.x,1);
   tt=(_Time.y+8.)%62.83;

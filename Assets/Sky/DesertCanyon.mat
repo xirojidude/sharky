@@ -20,14 +20,15 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: f45438287be940949ae2ec84252460ea, type: 3}
+        m_Texture: {fileID: 2800000, guid: 039ac874209c5ba4e91a44a3f7f6e061, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex2:
-        m_Texture: {fileID: 2800000, guid: facbd58aa9aa3f94b84739323fd331f7, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1dc47bb6215d0f8449518f758e5f2ad7, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats: []
     m_Colors:
     - _SunDir: {r: -0.11, g: 0.07, b: 0.99, a: 0}
     - _SunPow: {r: 1.1, g: 0.6, b: 0.39999998, a: 1}
+    - _XYZPos: {r: -138.8, g: 56.8, b: 2.8, a: 0}

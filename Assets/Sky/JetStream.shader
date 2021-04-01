@@ -4,6 +4,8 @@ Shader "Skybox/JetStream"
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -21,6 +23,7 @@ Shader "Skybox/JetStream"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -335,22 +338,22 @@ float arcc(float2 p, float sd)
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
     float2 uv = fragCoord.xy; // / iResolution.xy;
     
-    //uv = 2.0 * uv - 1.0;
+    uv = 2.0 * uv - 1.0;
     //uv.x *= iResolution.x / iResolution.y;
     
     float2 drh = drop(uv);
     
     float camtm = _Time.y * 0.15;
-    //float3 ro = float3(cos(camtm), 0.0, camtm);
+     ro = float3(cos(camtm), 0.0, camtm);
     //float3 rd = normalize(float3(uv, 1.2));
     rd.xz = rotate(rd.xz, sin(camtm) * 0.4);
     rd.yz = rotate(rd.yz, sin(camtm * 1.3) * 0.4);
     
-    float3 sun = normalize(float3(0.2, 1.0, 0.1));
+    float3 sun = normalize(_SunDir); //float3(0.2, 1.0, 0.1));
     
     float sd = sin(fragCoord.x * 0.01 + fragCoord.y * 3.333333333 + _Time.y) * 1298729.146861;
     
@@ -381,8 +384,8 @@ float arcc(float2 p, float sd)
     lacc = max(lacc * 0.3 + 0.3, 0.0);
     float3 cloud = pow(float3(lacc,lacc,lacc), float3(0.7, 1.0, 1.0) * 1.0);
     col = lerp(sky, cloud, dacc);
-    col *= exp(tunRef.dist * -0.1);
-    col += drh.y;
+//    col *= exp(tunRef.dist * -0.1);
+//    col += drh.y;
     
     float4 rnd = float4(0.1, 0.2, 0.3, 0.4);
     float arcv = 0.0, arclight = 0.0;
@@ -416,10 +419,10 @@ float arcc(float2 p, float sd)
         arclight += exp(abs(arcz - tunRef.p.z) * -0.3) * frac(sin(arcseed) * 198721.6231) * arcint;
     }
     float3 arccol = float3(0.9, 0.7, 0.7);
-    col += arclight * arccol * 0.5;
-    col = lerp(col, arccol, clamp(arcv, 0.0, 1.0));
-    col = pow(col, float3(1.0, 0.8, 0.5) * 1.5) * 1.5;
-    col = pow(col, float3(1.0 / 2.2,1.0 / 2.2,1.0 / 2.2));
+//    col += arclight * arccol * 0.5;
+//    col = lerp(col, arccol, clamp(arcv, 0.0, 1.0));
+//    col = pow(col, float3(1.0, 0.8, 0.5) * 1.5) * 1.5;
+   // col = pow(col, float3(1.0 / 2.2,1.0 / 2.2,1.0 / 2.2));
     fragColor = float4(col, 1.0);
 
 

@@ -4,6 +4,9 @@ Shader "Skybox/Jellyfish"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+
     }
     SubShader
     {
@@ -21,6 +24,7 @@ Shader "Skybox/Jellyfish"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -506,7 +510,7 @@ float3 render( float2 uv, ray camRay, float depth ) {
             col = lerp(col, volTex.rgb, volTex.a);
             col = lerp(col, float3(dif), .25);
 
-            col += fresnel*ref*sat(dot(up, n));
+//            col += fresnel*ref*sat(dot(up, n));
 
             //fade
             fade = max(fade, S(.0, 1., fresnel));
@@ -514,7 +518,7 @@ float3 render( float2 uv, ray camRay, float depth ) {
             float3 dif = accent;
             col = lerp(bg, dif, fresnel);
             
-            col *= lerp(.6, 1., S(0., -1.5, o.uv.y));
+//            col *= lerp(.6, 1., S(0., -1.5, o.uv.y));
             
             float prop = o.pump+.25;
             prop *= prop*prop;
@@ -531,7 +535,7 @@ float3 render( float2 uv, ray camRay, float depth ) {
         fade = max(fade, S(0., 100., o.d));
         col = lerp(col, bg, fade);
         
-        if(o.m==4.)
+       if(o.m==4.)
             col = float3(1., 0., 0.);
     } 
      else
@@ -549,7 +553,7 @@ float3 render( float2 uv, ray camRay, float depth ) {
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
     float t = _Time.y*.04;
     
@@ -586,9 +590,9 @@ float3 render( float2 uv, ray camRay, float depth ) {
     float3 col = render(uv, cam.ray, 0.);
     
     float lr = lerp(1.5, 2.6, SIN(t+pi));
-    col = pow(col, float3(lr,lr,lr));     // post-processing
-    float d = 1.-dot(uv, uv);       // vignette
-    col *= (d*d*d)+.1;
+ //   col = pow(col, float3(lr,lr,lr));     // post-processing
+//    float d = 1.-dot(uv, uv);       // vignette
+//    col *= (d*d*d)+.1;
     
     fragColor = float4(col, 1.);
 

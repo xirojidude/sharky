@@ -4,6 +4,8 @@ Shader "Skybox/MysteryMountains"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -35,6 +37,8 @@ Shader "Skybox/MysteryMountains"
 
             uniform sampler2D _MainTex; 
             float4 _MainTex_ST;
+           float4 _SunDir,_XYZPos;
+
 
             v2f vert (appdata v)
             {
@@ -68,6 +72,7 @@ Shader "Skybox/MysteryMountains"
                 float2 w = v.uv;
                 float4 c = float4(0.,0.,0.,1.);
                 float4 p=float4(w.x,w.y,1.,1.)-.5,d=p,t;
+                p+=_XYZPos;
                 p.z += _Time.y*20.;d.y-=.4;
                 
                 for(float i=1.5;i>0.;i-=.02)

@@ -5,6 +5,8 @@ Shader "Skybox/RollingHills"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+       _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -22,6 +24,7 @@ Shader "Skybox/RollingHills"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -340,7 +343,7 @@ float3 PostEffects(float3 rgb, float2 xy)
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
  //   float m = (iMouse.x/iResolution.x)*300.0;
     float gTime = (_Time.y*5.0+2352.0)*.006;

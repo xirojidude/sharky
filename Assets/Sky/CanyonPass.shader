@@ -1,11 +1,13 @@
-﻿
-Shader "Skybox/LunaDebris"
+
+Shader "Skybox/CanyonPass"
 {
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
-   SubShader
+    SubShader
     {
         Tags { "RenderType"="Opaque" }
         LOD 100
@@ -21,6 +23,7 @@ Shader "Skybox/LunaDebris"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -30,54 +33,55 @@ Shader "Skybox/LunaDebris"
 
             struct v2f {
                 float4 uv : TEXCOORD0;         //posWorld
+                float4 worldPos : TEXCOORD1;
                 float4 vertex : SV_POSITION;   //pos
+                float4 screenPos : TEXCOORD2;
             };
 
-             v2f vert (appdata v) {
+            v2f vert (appdata v) {
                 appdata v2;
                 v2.vertex = v.vertex; //mul(v.vertex ,float4x4(-1,0.,0.,0.,  0.,1.,0.,0.,  0.,0.,1.,0.,  0.,0.,0.,1.));
                 v2f o = (v2f)0;
                 o.uv = mul(unity_ObjectToWorld, v2.vertex);
                 o.vertex = UnityObjectToClipPos( v.vertex); // * float4(1.0,1.,1.0,1.) ); // squish skybox sphere
+                o.worldPos = mul(unity_ObjectToWorld, v2.vertex);
+                o.screenPos  = ComputeScreenPos(o.vertex);
+                //o.screenPos.z = -(mul(UNITY_MATRIX_MV, vertex).z * _ProjectionParams.w);     // old calculation, as I used the depth buffer comparision for min max ray march. 
+
                 return o;
             }
 
 /*
 
-    Lunar Debris
-    ------------
+    Canyon Pass
+    -----------
 
-    Just playing around a little more with 3D cellular tiling to create some random rocks floating
-    around in space. The distance field is analogous to raymarched, mutated Voronoi. 
+    Combining some cheap distance field functions with some functional and tex2D-based bump 
+    mapping to carve out a rocky canyon-like passageway.
 
-    Compared to genuine raymarched Voronoi, the framerate isn't too bad, but I think it can be
-    improved upon. I'll take a closer look at it to see if I can increase it a bit.
+    There's nothing overly exciting about this example. I was trying to create a reasonably
+    convincing looking rocky setting using cheap methods.
 
-    The trickiest thing to deal with was not the rocky field itself, but rather negotiating through
-    it in a way that gives the appearance that the camera is naturally avoiding obstacles. I tried
-    a few different things but smoothly negating space with a squashed diamond tube seemed to 
-    produce the desired result. Anyway, the process is simple and is contained in the distance 
-    function.
-
-
-    Other examples:
-
-    // Very stylish.
-    Dusty Thing - kuvkar
-    https://www.shadertoy.com/view/XlBXRt
-
-    // Love the way this is done.
-    Moon Rock - foxes
-    https://www.shadertoy.com/view/4s33RX
-
+    I added in some light frosting, mainly to break the monotony of the single colored rock.
+    There's a mossy option below, for anyone interested. Visually speaking, I find the moss more
+    interesting, but I thought the frost showed the rock formations a little better. Besides,
+    I'd like to put together a more dedicated greenery example later.
 
 */
 
 #define PI 3.14159265
 #define FAR 60.
 
-// Uses smooth combinations (smin, smax, etc) to smooth the rock joins.
-#define SMOOTHING 
+// Extra settings. Use one or the other. The MOSS setting overrides the HOT setting.
+// Mossy setting. Better, if you want more color to liven things up.
+#define MOSS 
+// Hot setting. It represents 2 minutes of post processing work, so it's definitely nothing to excited about. :)
+//#define HOT
+
+// Coyote's snippet to provide a virtual reality element. Really freaky. It gives the scene 
+// physical depth, but you have to do that magic-picture focus-adjusting thing with your eyes.
+//#define THREE_D 
+
 
 // Rotation matrix.
 const float2x2 rM = float2x2(.7071, .7071, -.7071, .7071); 
@@ -86,35 +90,25 @@ const float2x2 rM = float2x2(.7071, .7071, -.7071, .7071);
 // of Fabrice Neyret's "ouside the box" thinking. :)
 float2x2 rot2( float a ){ float2 v = sin(float2(1.570796, 0) + a);  return float2x2(v, -v.y, v.x); }
 
-// Tri-Planar blending function. Based on an old Nvidia tutorial.
-float3 tex3D( sampler2D tex, in float3 p, in float3 n ){
-  
-    n = max(abs(n), 0.001);//n = max((abs(n) - 0.2)*7., 0.001); //  etc.
-    n /= (n.x + n.y + n.z ); 
-    p = (tex2D(tex, p.yz)*n.x + tex2D(tex, p.zx)*n.y + tex2D(tex, p.xy)*n.z).xyz;
-    return p*p;
+
+// Tri-Planar blending function. Based on an old Nvidia writeup:
+// GPU Gems 3 - Ryan Geiss: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch01.html
+float3 tex3D(sampler2D channel, float3 p, float3 n){
+    
+    //float3 col = lerp(float3(.7, 1, 1.3), float3(1), n.y*.5 + .5);
+    
+    n = max(abs(n) - .2, 0.001);
+    n /= dot(n, float3(1,1,1));
+    float3 tx = tex2D(channel, p.zy).xyz;
+    float3 ty = tex2D(channel, p.xz).xyz;
+    float3 tz = tex2D(channel, p.xy).xyz;
+    
+    // tex2Ds are stored in sRGB (I think), so you have to convert them to linear space 
+    // (squaring is a rough approximation) prior to working with them... or something like that. :)
+    // Once the final color value is gamma corrected, you should see correct looking colors.
+    return (tx*tx*n.x + ty*ty*n.y + tz*tz*n.z);//*col;
 }
 
-// Smooth maximum, based on IQ's smooth minimum.
-float smaxP(float a, float b, float s){
-    
-    float h = clamp( 0.5 + 0.5*(a-b)/s, 0., 1.);
-    return lerp(b, a, h) + h*(1.0-h)*s;
-}
-
-// IQ's smooth minium function. 
-float2 sminP(float2 a, float2 b , float s){
-    
-    float2 h = clamp( 0.5 + 0.5*(b-a)/s, 0. , 1.);
-    return lerp(b, a, h) - h*(1.0-h)*s;
-}
-
-// IQ's smooth minium function. 
-float sminP(float a, float b , float s){
-    
-    float h = clamp( 0.5 + 0.5*(b-a)/s, 0. , 1.);
-    return lerp(b, a, h) - h*(1.0-h)*s;
-}
 
 // Cellular tile setup. Draw four overlapping objects (spheres, in this case) 
 // at various positions throughout the tile.
@@ -126,12 +120,13 @@ float drawObject(in float3 p){
     
 }
 
-   
-float cellTile(in float3 p){
 
+// 3D cellular tile function.
+float cellTile(in float3 p){
    
-    float4 v, d; 
+    float4 d; 
     
+    // Plot four objects.
     d.x = drawObject(p - float3(.81, .62, .53));
     p.xy = mul(p.xy,rM);
     d.y = drawObject(p - float3(.6, .82, .64));
@@ -141,25 +136,23 @@ float cellTile(in float3 p){
     d.w = drawObject(p - float3(.12, .62, .64));
 
     // Obtaining the minimum distance.
-    #ifdef SMOOTHING
-    v.xy = sminP(d.xz, d.yw, .05); 
-    #else
-    v.xy = min(d.xz, d.yw);
-    #endif
+    d.xy = min(d.xz, d.yw);
     
     // Normalize... roughly. Trying to avoid another min call (min(d.x*A, 1.)).
-    #ifdef SMOOTHING
-    return  sminP(v.x, v.y, .05)*2.5; 
-    #else
-    return  min(v.x, v.y)*2.5; 
-    #endif    
+    return  min(d.x, d.y)*2.5;
     
 }
 
 
+// The triangle function that Shadertoy user Nimitz has used in various triangle noise demonstrations.
+// See Xyptonjtroz - Very cool. Anyway, it's not really being used to its full potential here.
+// https://www.shadertoy.com/view/4ts3z2
+float3 tri(in float3 x){return abs(frac(x)-.5);} // Triangle function.
+
+
+
 // The path is a 2D sinusoid that varies over time, depending upon the frequencies, and amplitudes.
-float2 path(in float z){ 
-    
+float2 path(in float z){
    
     //return float2(0); // Straight.
     float a = sin(z * 0.11);
@@ -170,44 +163,29 @@ float2 path(in float z){
 }
 
 
-// Compact, self-contained version of IQ's 3D value noise function.
-float n3D(float3 p){
-    const float3 s = float3(7, 157, 113);
-    float3 ip = floor(p); p -= ip; 
-    float4 h = float4(0., s.yz, s.y + s.z) + dot(ip, s);
-    p = p*p*(3. - 2.*p); //p *= p*p*(p*(p * 6. - 15.) + 10.);
-    h = lerp(frac(sin(h)*43758.5453), frac(sin(h + s.x)*43758.5453), p.x);
-    h.xy = lerp(h.xz, h.yw, p.y);
-    return lerp(h.x, h.y, p.z); // Range: [0, 1].
-}
 
-// The debris field. I'll tidy it up later. In general, this is a terrible 
-// distance field to hone in on. I'm come back to it later and rework it.
+// A fake noise looking sinusoial field - flanked by a ground plane and some walls with
+// some triangular-based perturbation lerped in. Cheap, but reasonably effective.
 float map(float3 p){
     
-    // Warping the whole field around the path.
-    p.xy -= path(p.z);
+ 
+    p.xy -= path(p.z); // Wrap the passage around
     
-    p/=2.;
+    float3 w = p; // Saving the position prior to mutation.
     
-    // Mutated, first order cellular object... the rocks.
-    float3 q = p + (cos(p*2.52 - sin(p.zxy*3.5)))*.2;
-    float sf = max(cellTile(q/5.), 0.); 
-    
-    // Mutated squashed diamond tube. Used to run the camera through.
-    p += (cos(p*.945 + sin(p.zxy*2.625)))*.2;
-    #ifdef SMOOTHING
-    float t = .1 - abs(p.x*.05) - abs(p.y);
-    #else
-    float t = .05 - abs(p.x*.05) - abs(p.y);
-    #endif  
-    
-    // Smoothly combine the negative tube space with the rocky field.
-    //p = sin(p*4.+cos(p.yzx*4.));
-    float n = smaxP(t, (.68 - (1.-sqrt(sf)))*2., 1.);// + abs(p.x*p.y*p.z)*.05;
+    float3 op = tri(p*.4*3. + tri(p.zxy*.4*3.)); // Triangle perturbation.
    
-    // A bit hacky... OK, very hacky. :)
-    return n*3.;
+    
+    float ground = p.y + 3.5 + dot(op, float3(.222,.222,.222))*.3; // Ground plane, slightly perturbed.
+ 
+    p += (op - .25)*.3; // Adding some triangular perturbation.
+   
+    p = cos(p*.315*1.41 + sin(p.zxy*.875*1.27)); // Applying the sinusoidal field (the rocky bit).
+    
+    float canyon = (length(p) - 1.05)*.95 - (w.x*w.x)*.01; // Spherize and add the canyon walls.
+    
+    return min(ground, canyon);
+
     
 }
 
@@ -217,7 +195,9 @@ float map(float3 p){
 // would do a decent job too.
 float bumpSurf3D( in float3 p, in float3 n){
     
-    return (cellTile(p/2.))*.8 + (cellTile(p*1.5))*.2;
+    //return (cellTile(p/1.5))*.66 + (cellTile(p*2./1.5))*.34;
+    
+    return cellTile(p/1.5);
     
 }
 
@@ -253,17 +233,26 @@ float3 doBumpMap( sampler2D tx, in float3 p, in float3 n, float bf){
 }
 
 
+float accum;
+
+
+
 // Basic raymarcher.
 float trace(in float3 ro, in float3 rd){
+    
+    accum = 0.;
 
     float t = 0.0, h;
-    for(int i = 0; i < 128; i++){
+    for(int i = 0; i < 160; i++){
     
         h = map(ro+rd*t);
         // Note the "t*b + a" addition. Basically, we're putting less emphasis on accuracy, as
         // "t" increases. It's a cheap trick that works in most situations... Not all, though.
-        if(abs(h)<0.0025*(t*.125 + 1.) || t>FAR) break; // Alternative: 0.001*max(t*.25, 1.)
-        t += h*.8;
+        if(abs(h)<0.001*(t*.25 + 1.) || t>FAR) break; // Alternative: 0.001*max(t*.25, 1.)
+        t += h;//*.7;
+        
+        if(abs(h)<0.25) accum += (.25-abs(h))/24.;///(1.+t);//.0005/abs(h);
+        //if(abs(h)<0.25)accum += (.25-abs(h))*float3(3, 2, 1)/4.*n3D((ro+rd*t)*16. - float3(0, 0, 1)*_Time.y*1.);
         
     }
 
@@ -271,13 +260,14 @@ float trace(in float3 ro, in float3 rd){
     
 }
 
+/*
 // Ambient occlusion, for that self shadowed look. Based on the original by XT95. I love this 
 // function, and in many cases, it gives really, really nice results. For a better version, and 
 // usage, refer to XT95's examples below:
 //
 // Hemispherical SDF AO - https://www.shadertoy.com/view/4sdGWN
 // Alien Cocoons - https://www.shadertoy.com/view/MsdGz2
-float calculateAO( in float3 p, in float3 n )
+float calculateAO2( in float3 p, in float3 n )
 {
     float ao = 0.0, l;
     const float maxDist = 2.;
@@ -292,6 +282,22 @@ float calculateAO( in float3 p, in float3 n )
     
     return clamp(1.- ao/nbIte, 0., 1.);
 }
+*/
+
+// I keep a collection of occlusion routines... OK, that sounded really nerdy. :)
+// Anyway, I like this one. I'm assuming it's based on IQ's original.
+float calculateAO(in float3 p, in float3 n){
+    
+    float sca = 1., occ = 0.;
+    for(float i=0.; i<5.; i++){
+    
+        float hr = .01 + i*.5/4.;        
+        float dd = map(n * hr + p);
+        occ += (hr - dd)*sca;
+        sca *= 0.7;
+    }
+    return clamp(1.0 - occ, 0., 1.);    
+}
 
 
 // Tetrahedral normal, to save a couple of "map" calls. Courtesy of IQ. In instances where there's no descernible 
@@ -299,14 +305,14 @@ float calculateAO( in float3 p, in float3 n )
 float3 calcNormal(in float3 p){
 
     // Note the slightly increased sampling distance, to alleviate artifacts due to hit point inaccuracies.
-    float2 e = float2(0.0025, -0.0025); 
-    return normalize(e.xyy * map(p + e.xyy) + e.yyx * map(p + e.yyx) + e.yxy * map(p + e.yxy) + e.xxx * map(p + e.xxx));
+    float2 e = float2(0.001, -0.001); 
+    return normalize(e.xyy*map(p + e.xyy) + e.yyx*map(p + e.yyx) + e.yxy*map(p + e.yxy) + e.xxx*map(p + e.xxx));
 }
 
 /*
 // Standard normal function. 6 taps.
 float3 calcNormal(in float3 p) {
-    const float2 e = float2(0.005, 0);
+    const float2 e = float2(0.002, 0);
     return normalize(float3(map(p + e.xyy) - map(p - e.xyy), map(p + e.yxy) - map(p - e.yxy), map(p + e.yyx) - map(p - e.yyx)));
 }
 */
@@ -331,7 +337,25 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
         if ((h)<0.001 || dist > end) break; 
     }
     
-    return min(max(shade, 0.) + 0.2, 1.0); 
+    return min(max(shade, 0.) + 0.0, 1.0); 
+}
+
+//////
+// Very basic pseudo environment mapping... and by that, I mean it's fake. :) However, it 
+// does give the impression that the surface is reflecting the surrounds in some way.
+//
+// Anyway, the idea is very simple. Obtain the reflected (or refraced) ray at the surface 
+// hit point, then index into a repeat tex2D in some way. It can be pretty convincing 
+// (in an abstract way) and facilitates environment mapping without the need for a cube map, 
+// or a reflective pass.
+//
+// More sophisticated environment mapping:
+// UI easy to integrate - XT95    
+// https://www.shadertoy.com/view/ldKSDm
+
+float3 envMap(float3 rd, float3 n){
+    
+    return tex3D(_MainTex, rd, n);
 }
 
 
@@ -339,27 +363,34 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
          fixed4 frag (v2f v) : SV_Target
             {
                 float2 fragCoord = v.vertex;
+                float2 screenUV = v.screenPos.xy / v.screenPos.w;
 
                 float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
 
-    
     // Screen coordinates.
 //    float2 uv = (fragCoord - iResolution.xy*0.5)/iResolution.y;
     
+    #ifdef THREE_D
+    float sg = sign(fragCoord.x - .5*iResolution.x);
+    uv.x -= sg*.25*iResolution.x/iResolution.y;
+    #endif
+    
     // Camera Setup.
-    float3 lookAt = rd; //float3(0, 0, iTime*8. + 0.1);  // "Look At" position.
-    float3 camPos = ro; //lookAt + float3(0.0, 0.0, -0.1); // Camera position, doubling as the ray origin.
+    float3 camPos = ro; //float3(0.0, 0.0, _Time.y*4.); // Camera position, doubling as the ray origin.
+
+    float3 lookAt = camPos + float3(0, 0, 0.25);  // "Look At" position.
 
  
     // Light positioning. The positioning is fake. Obviously, the light source would be much 
     // further away, so illumination would be relatively constant and the shadows more static.
     // That's what direct lights are for, but sometimes it's nice to get a bit of a point light 
     // effect... but don't move it too close, or your mind will start getting suspicious. :)
-    float3 lightPos = camPos + float3(0, 7, 35.);
+    float3 lightPos = camPos + float3(-10, 20, -20);
+
 
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera, "look at," and two light floattors down the tunnel. The "path" function is 
@@ -367,15 +398,22 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
     lookAt.xy += path(lookAt.z);
     camPos.xy += path(camPos.z);
     //lightPos.xy += path(lightPos.z);
+    
+    
+    #ifdef THREE_D
+    camPos.x -= sg*.15; lookAt.x -= sg*.15; lightPos.x -= sg*.15;
+    #endif
+    
+    
 
     // Using the above to produce the unit ray-direction floattor.
-    float FOV = PI/3.; // FOV - Field of view.
+    float FOV = 1.333;//PI/3.; // FOV - Field of view.
     float3 forward = normalize(lookAt-camPos);
     float3 right = normalize(float3(forward.z, 0., -forward.x )); 
     float3 up = cross(forward, right);
 
     // rd - Ray direction.
-    //float3 rd = normalize(forward + FOV*uv.x*right + FOV*uv.y*up);
+//    float3 rd = normalize(forward + FOV*uv.x*right + FOV*uv.y*up);
     
     // Lens distortion.
     //float3 rd = (forward + FOV*uv.x*right + FOV*uv.y*up);
@@ -386,8 +424,7 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
     rd.xy = mul(rot2( path(lookAt.z).x/16. ),rd.xy);
 
     /*    
-    // Mouse controls, as per TambakoJaguar's suggestion.
-    // Works better if the line above is commented out.   
+    // Mouse controls. I use them as a debugging device, but they can be used to look around. 
     float2 ms = float2(0);
     if (iMouse.z > 1.0) ms = (2.*iMouse.xy - iResolution.xy)/iResolution.xy;
     float2 a = sin(float2(1.5707963, 0) - ms.x); 
@@ -396,12 +433,12 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
     a = sin(float2(1.5707963, 0) - ms.y); 
     rM = float2x2(a, -a.y, a.x);
     rd.yz = rd.yz*rM;
-    */ 
+    */
     
     // Standard ray marching routine. I find that some system setups don't like anything other than
     // a "break" statement (by itself) to exit. 
-    float t = trace(camPos, rd);    
-
+    float t = trace(camPos, rd);   
+    
     
     // Initialize the scene color.
     float3 sceneCol = float3(0,0,0);
@@ -426,21 +463,18 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
         //
         // tex2D scale factor.
         const float tSize0 = 1./2.;
-        // tex2D-based bump mapping.
-        sn = doBumpMap(_MainTex, sp*tSize0, sn, 0.1);
-        float3 tsp =  sp;// + float3(0, 0, iTime/8.);// + float3(path(sp.z), 0.)
-
+        
+        
         // Function based bump mapping. Comment it out to see the under layer. It's pretty
         // comparable to regular beveled Voronoi... Close enough, anyway.
-        sn = doBumpMap(tsp, sn, .5);
+        sn = doBumpMap(sp, sn, .5);
         
-       
-        // Ambient occlusion.
-        float ao = calculateAO(sp, sn);//*.75 + .25;
+        // tex2D-based bump mapping.
+        sn = doBumpMap(_MainTex, sp*tSize0, sn, .1);//(-sign(sn.y)*.15+.85)*
 
         
         // Light direction floattors.
-        float3 ld = lightPos-sp;
+        float3 ld = lightPos - sp;
 
         // Distance from respective lights to the surface point.
         float lDist = max(length(ld), 0.001);
@@ -448,12 +482,18 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
         // Normalize the light direction floattors.
         ld /= lDist;
         
+        // Shadows.
+        float shading = shadows(sp + sn*.005, ld, .05, lDist, 8.);
+        
+        // Ambient occlusion.
+        float ao = calculateAO(sp, sn);//*.75 + .25;
+
+        
         
         // Light attenuation, based on the distances above.
-        float atten = 1./(1. + lDist*.007); // + distlpsp*distlpsp*0.025
+        float atten = 1./(1. + lDist*.007);
         
-        // Ambient light, due to light bouncing around the field, I guess.
-        float ambience = 0.25;
+
         
         // Diffuse lighting.
         float diff = max( dot(sn, ld), 0.0);
@@ -464,44 +504,100 @@ float shadows(in float3 ro, in float3 rd, in float start, in float end, in float
         
         // Fresnel term. Good for giving a surface a bit of a reflective glow.
         float fre = pow( clamp(dot(sn, rd) + 1., .0, 1.), 1.);
+        
+        // Ambient light, due to light bouncing around the the canyon.
+        float ambience = 0.35*ao + fre*fre*.25;
 
         // Object texturing, coloring and shading.
-        float3 texCol = float3(.8, .9, 1.);
-        texCol *= min(tex3D(_MainTex, sp*tSize0, sn)*3.5, 1.);
-        texCol *= bumpSurf3D(sp, sn)*.5 + .5;
-        
-        // Shadows.
-        float shading = shadows(sp + sn*.005, ld, .05, lDist, 8.);
+        float3 texCol = tex3D(_MainTex, sp*tSize0, sn);
 
+        // Tones down the pinkish limestone\granite color.
+        //texCol *= lerp(float3(.7, 1, 1.3), float3(1), snNoBump.y*.5 + .5);
+        
+        #ifdef MOSS
+        // Some quickly improvised moss.
+        texCol = texCol*lerp(float3(1,1,1), float3(.5, 1.5, 1.5), abs(snNoBump));
+        texCol = texCol*lerp(float3(1,1,1), float3(.6, 1, .5), pow(abs(sn.y), 4.));
+        #else
+        // Adding in the white frost. A bit on the cheap side, but it's a subtle effect.
+        // As you can see, it's improvised, but from a physical perspective, you want the frost to accumulate
+        // on the flatter surfaces, hence the "sn.y" factor. There's some Fresnel thrown in as well to give
+        // it a tiny bit of sparkle.
+        texCol = lerp(texCol, float3(.35, .55, 1)*(texCol*.5+.5)*float3(2), ((snNoBump.y*.5 + sn.y*.5)*.5+.5)*pow(abs(sn.y), 4.)*texCol.r*fre*4.);
+        #endif      
+
+        
         // Final color. Pretty simple.
-        sceneCol = texCol*(diff + spec + ambience);
+        sceneCol = texCol*(diff + spec + ambience);// + float3(.2, .5, 1)*spec;
         
-        // Adding a touch of Fresnel for a bit of space glow... I'm not so
-        // sure if that's a thing, but it looks interesting. :)
-        sceneCol += texCol*float3(.8, .95, 1)*pow(fre, 1.)*.5;
-
-
-        // Shading.
-        sceneCol *= atten*shading*ao;
-
+        // A bit of accumulated glow.
+        sceneCol += texCol*((sn.y)*.5+.5)*min(float3(1, 1.15, 1.5)*accum, 1.);  
+     
         
+        // Adding a touch of Fresnel for a bit of glow.
+        sceneCol += texCol*float3(.8, .95, 1)*pow(fre, 4.)*.5;
+        
+        
+        // Faux environmental mapping. Adds a bit more ambience.        
+        float3 sn2 = snNoBump*.5 + sn*.5;
+        float3 ref = reflect(rd, sn2);//
+        float3 em = envMap(ref/2., sn2);
+        ref = refract(rd, sn2, 1./1.31);
+        float3 em2 = envMap(ref/8., sn2);
+        //sceneCol += ((sn.y)*.25+.75)*sceneCol*(em + em2);
+        sceneCol += sceneCol*2.*(sn.y*.25+.75)*lerp(em2, em, pow(fre, 4.));
+
+
+        // Shading. Adding some ambient occlusion to the shadow for some fake global lighting.
+        sceneCol *= atten*min(shading + ao*.35, 1.)*ao;
        
     
     }
+    
        
     // Blend in a bit of light fog for atmospheric effect. I really wanted to put a colorful, 
     // gradient blend here, but my mind wasn't buying it, so dull, blueish grey it is. :)
-    float3 fog = float3(.6, .8, 1)/2.*(rd.y*.5 + .5);    
+    float3 fog = float3(.6, .8, 1.2)*(rd.y*.5 + .5);
+    #ifdef MOSS
+    fog *= float3(1, 1.25, 1.5);
+    #else
+    #ifdef HOT
+    fog *= 4.;
+    #endif
+    #endif
     sceneCol = lerp(sceneCol, fog, smoothstep(0., .95, t/FAR)); // exp(-.002*t*t), etc. fog.zxy
+    
+    
+    //sceneCol *= float3(.5, .75, 1.5); // Nighttime vibe.
+    #ifndef MOSS
+    #ifdef HOT
+    float gr = dot(sceneCol, float3(.299, .587, .114)); // Grayscale.
+    // A tiny portion of the original color blended with a very basic fire palette.
+    sceneCol = sceneCol*.1 + pow(min(float3(1.5, 1, 1)*gr*1.2, 1.), float3(1, 3, 16));
+    // Alternative artsy look. Comment out the line above first.
+    //sceneCol = lerp(sceneCol, pow(min(float3(1.5, 1, 1)*gr*1.2, 1.), float3(1, 3, 16)), -uv.y + .5);
+    #endif
+    #endif
+    
+    // Subtle, bluish vignette.
+//    uv = fragCoord/iResolution.xy;
+//    sceneCol = lerp(float3(0, .1, 1), sceneCol, pow( 16.0*uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y) , .125)*.15 + .85);
+    
 
     // Clamp and present the badly gamma corrected pixel to the screen.
     fragColor = float4(sqrt(clamp(sceneCol, 0., 1.)), 1.0);
     
+
+
                 return fragColor;
             }
-
 
             ENDCG
         }
     }
 }
+
+
+
+
+//https://www.shadertoy.com/view/MlG3zh

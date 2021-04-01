@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Skybox_PlanetMars
+  m_Name: PlanetGreen
   m_Shader: {fileID: 4800000, guid: 47f7042deda05e240b8adbaaa345643c, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -19,24 +19,28 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 5cf543b215b04ba448e31a752562fb2c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex0:
         m_Texture: {fileID: 2800000, guid: 5cf543b215b04ba448e31a752562fb2c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex1:
-        m_Texture: {fileID: 2800000, guid: 5cf543b215b04ba448e31a752562fb2c, type: 3}
+        m_Texture: {fileID: 2800000, guid: f01f8cdc98ae69b41b5c159b1ca6230a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _CloudFilter: 0.24
-    - _RayFilter: 1.81
-    - _RayStrength: 7.28
-    - _SunAngle: 0.5
+    - _CloudFilter: -0.4
+    - _RayFilter: 0.38
+    - _RayStrength: 7.3
+    - _SunAngle: -20.41
     m_Colors:
-    - _CloudColor: {r: 0.97900003, g: 0.31328002, b: 0.31328002, a: 1}
-    - _FogColor: {r: 0.16622703, g: 0, b: 0.2784314, a: 0}
-    - _GroundColor: {r: 0.48400003, g: 0.41285202, b: 0.4471993, a: 0}
-    - _RayColor: {r: 0.867, g: 0.867, b: 0.867, a: 0}
-    - _SkyColor: {r: 0.48330644, g: 0.5, b: 0.2570755, a: 0.9843137}
-    - _SunColor: {r: 1, g: 1, b: 0.92, a: 0}
-    - _SunPos: {r: 0.2843759, g: 0.8524504, b: 1.7663099, a: 1}
+    - _CloudColor: {r: 0.8632076, g: 0.9585564, b: 1, a: 1}
+    - _FogColor: {r: 0.47432357, g: 0.5377358, b: 0.5371335, a: 0}
+    - _GroundColor: {r: 0.2901961, g: 0.4745098, b: 0.3188992, a: 0}
+    - _RayColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SkyColor: {r: 0.32900003, g: 0.32900003, b: 0.32900003, a: 1}
+    - _SunColor: {r: 0.9989842, g: 1, b: 0.92156863, a: 0}
+    - _SunPos: {r: 0, g: 0.86684394, b: 1.8911644, a: 1}

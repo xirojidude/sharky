@@ -5,6 +5,7 @@ Shader "Skybox/Ocean"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _SunPos ("Sun Position", Color) = (1.0,1,1,1) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
 
         
     }
@@ -24,7 +25,7 @@ Shader "Skybox/Ocean"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
-            float4 _SunPos;
+            float4 _SunPos,_XYZPos;
 
             struct appdata
             {
@@ -183,7 +184,7 @@ float3 aces_tonemap(float3 color){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 
  //   vec2 uv = fragCoord.xy / iResolution.xy;

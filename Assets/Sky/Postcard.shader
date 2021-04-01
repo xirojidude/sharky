@@ -4,7 +4,9 @@ Shader "Skybox/Postcard"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-    }
+       _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -21,6 +23,7 @@ Shader "Skybox/Postcard"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+           float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -253,7 +256,7 @@ float3 bump(in float2 p, in float3 n, in float t)
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 
 //    vec2 bp = fragCoord.xy/iResolution.xy*2.-1.;
