@@ -5,6 +5,7 @@ Shader "Skybox/Terrainz"
     {
         _MainTex0 ("tex2D", 2D) = "white" {}
         _MainTex1 ("tex2D", 2D) = "white" {}
+        _XYZPos ("XYZ Offset", Vector) =  (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -23,6 +24,7 @@ Shader "Skybox/Terrainz"
 
             uniform sampler2D _MainTex0; 
             uniform sampler2D _MainTex1; 
+            float4 _XYZPos;
 
             struct appdata
             {
@@ -57,8 +59,7 @@ float3 L(float3 d) {
                 fixed4 c = tex2D(_MainTex0, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
-
+                float3 ro = _WorldSpaceCameraPos.xyz*-.01+_XYZPos;                                             // ray origin
 //    float2 R=iResolution.xy,u = f/R;
     float2 u = float2(1,1);
     
@@ -70,7 +71,7 @@ float3 L(float3 d) {
      float3 m = L(d+float3(0, .6, 0));
     
     bool h = false;
-  
+    [loop]
     for (int i = 0; i < 100; ++i) {
         float f = p.y+tex2D(_MainTex0, p.xz/10.).r*2.+sin(p.x+p.z/10.)*cos(p.z-p.x/100.)-tex2D(_MainTex0, p.xz/100.).r*2.;
         if (length(p-po)>20.) break;
@@ -80,13 +81,15 @@ float3 L(float3 d) {
         }
         p+=d*f/5.;
     }
-    if (h)
-            float ln = .8-length(p-po)/20.;
-            m = lerp(
-                tex2D(_MainTex1, p.xz).grb+(float3(ln,ln,ln))/2.,
-                m, pow(length(p-po)/20., 25.))*(1.-tex2D(_MainTex0, p.xz/10.).r*.7);
-    c = pow(float4(m, 1)*(1.-length(u-.5)/1.62), float4(1./1.5,1./1.5,1./1.5,1./1.5));
+    if (h) float ln = .8-length(p-po)/20.;
+    float3 c1 = tex2D(_MainTex1, p.xz).rgb;//+(float3(ln,ln,ln))/2.;
+    float pw =pow(    length(p-po)/20., 25.);
 
+    m = lerp(
+        c1,
+        m, pw)*(1.-tex2D(_MainTex0, p.xz/10.).r*.7);
+ //       c = float4(m, 1);
+    c = pow(float4(m, 1)*(1.-length(u-.5)/1.62), float4(1./1.5,1./1.5,1./1.5,1./1.5));
 
                 return c;
             }

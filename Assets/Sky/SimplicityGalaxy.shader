@@ -101,7 +101,7 @@ float3 nrand3( float2 co )
 
     float2 uv = rd.xy; //2. * fragCoord.xy / iResolution.xy - 1.;
     float2 uvs = uv ; // * iResolution.xy / max(iResolution.x, iResolution.y);
-    float3 p = rd; //float3(uvs / 4., 0) + float3(1., -1.3, 0.);
+    float3 p = ro; //float3(uvs / 4., 0) + float3(1., -1.3, 0.);
 //    p += .2 * float3(sin(_Time.y / 16.), sin(_Time.y / 12.),  sin(_Time.y / 128.));
     
     float freqs[4];

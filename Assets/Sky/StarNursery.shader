@@ -4,6 +4,8 @@ Shader "Skybox/StarNursery"
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -21,6 +23,7 @@ Shader "Skybox/StarNursery"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -115,7 +118,7 @@ float4 map( in float3 p )
 {
     float d = 0.01- p.y;
 
-    float f= fbm( p*1.0 - float3(.4,0.3,-0.3)*time);
+    float f= fbm( p*1.0 - float3(.4,0.3,-0.3)); //*time);
     d += 4.0 * f;
 
     d = clamp( d, 0.0, 1.0 );
@@ -165,7 +168,7 @@ float4 raymarch( in float3 ro, in float3 rd )
                 fixed4 fragColor = tex2D(_MainTex, v2.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 //    float2 q = fragCoord.xy / iResolution.xy;
 //    float2 p = -1.0 + 2.0*q;

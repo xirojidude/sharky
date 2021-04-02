@@ -4,6 +4,8 @@ Shader "Skybox/Storm"
     Properties
     {
         _MainTex ("tex3D", 3D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -21,6 +23,7 @@ Shader "Skybox/Storm"
             #include "UnityCG.cginc"
 
             uniform sampler3D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -216,7 +219,7 @@ float3 march(float3 ro, float3 rd, float dither, float var)
                 fixed4 fragColor = tex3D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
  //   float2 uv = fragCoord/iResolution.xy;
  //   float2 ndc = uv * 2. - 1.;

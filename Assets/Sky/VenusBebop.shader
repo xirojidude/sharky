@@ -4,6 +4,8 @@ Shader "Skybox/VenusBebop"
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader
     {
@@ -21,6 +23,7 @@ Shader "Skybox/VenusBebop"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -142,7 +145,7 @@ float2 tr( float3 ro,float3 rd )
                 fixed4 fragColor = tex2D(_MainTex, v2.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 //    float2 uv=(fragCoord.xy/iResolution.xy-0.5)/float2(iResolution.y/iResolution.x,1);
     tt=((16.+_Time.y)%62.82);

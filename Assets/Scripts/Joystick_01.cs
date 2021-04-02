@@ -10,6 +10,7 @@ public class Joystick_01 : UdonSharpBehaviour
     //[SerializeField] Transform Ship;
     public Transform Ship;
     public Transform SpawnLocation;
+    public Transform JoySpawnLocation;
     public float speed = 0.0f;
     public float vspeed = 0.0f;
     public int mode = 0;
@@ -21,6 +22,7 @@ public class Joystick_01 : UdonSharpBehaviour
     private float smooth = 1.1f;
     private Vector3 joystickSpawnPosition;
     private Quaternion joystickSpawnRotation;
+    private Rigidbody m_Rigidbody;
  
     Quaternion JoystickZeroPoint;
     private float roll = 0f;
@@ -40,8 +42,9 @@ public class Joystick_01 : UdonSharpBehaviour
         Networking.SetOwner(player, gameObject);
         if (player.IsUserInVR()) { InVR = true; }
 //        joystickSpawnPosition = new Vector3(1.7899f,-0.5435001f,0.03769994f);
-        joystickSpawnPosition = this.transform.localPosition;
+        joystickSpawnPosition = this.transform.position;
         joystickSpawnRotation = this.transform.localRotation;
+        m_Rigidbody = Ship.GetComponent<Rigidbody>();
     }
 //    void Update() {
     void FixedUpdate() {
@@ -49,6 +52,7 @@ public class Joystick_01 : UdonSharpBehaviour
         if (speed >0.0f) 
         {
         Ship.position += transform.forward * Time.deltaTime * speed;
+      //   m_Rigidbody.AddForce(transform.up * 9.8f);
 
 //  From a quaternion ...
 //  roll  = Mathf.Atan2(2*y*w - 2*x*z, 1 - 2*y*y - 2*z*z);
@@ -101,8 +105,13 @@ public class Joystick_01 : UdonSharpBehaviour
         {
             speed = Mathf.Max(0.0f,speed-deceleration-(deceleration*speed));
         }
+        Vector3 VehicleVel = m_Rigidbody.velocity;
         vspeed = Mathf.Max(0.0f,vspeed-deceleration);
+        float gravity = 9.81f * Time.deltaTime;
+        LastFrameVel.y -= gravity; //add gravity
+        m_Rigidbody.AddForce(transform.up * 9.8f);
         Ship.position += transform.up * Time.deltaTime * vspeed;
+        LastFrameVel = VehicleVel;
     }
 
     void OnPickupUseDown()
@@ -131,7 +140,7 @@ public class Joystick_01 : UdonSharpBehaviour
     void OnDrop()
     {
         // reset position of joystick to original
-        this.transform.position=SpawnLocation.position;
+        this.transform.localPosition = new Vector3(1.7899f,-0.5435001f, 0.03769994f);  //.localPosition;
   //      this.transform.rotation=SpawnLocation.rotation;
         // this.transform.localPosition = joystickSpawnPosition;
         // this.transform.localRotation = joystickSpawnRotation;

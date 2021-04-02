@@ -5,7 +5,7 @@ Shader "Skybox/DesertCanyon"
     {
         _MainTex ("tex2D", 2D) = "white" {}
         _MainTex2 ("tex2D", 2D) = "white" {}
-        _SunDir ("Cloud Color", Vector) = (-.11,.07,0.99,0) 
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
     SubShader

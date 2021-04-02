@@ -4,6 +4,7 @@ Shader "Skyboxx/aboveClouds"
     Properties
     {
         _MainTex ("tex2D", 2D) = "white" {}
+        _MainTex2 ("tex2D", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
@@ -23,6 +24,7 @@ Shader "Skyboxx/aboveClouds"
             #include "UnityCG.cginc"
 
             uniform sampler2D _MainTex; 
+            uniform sampler2D _MainTex2; 
             float4 _SunDir,_XYZPos;
 
             struct appdata
@@ -79,7 +81,7 @@ float noise( in float3 x )
 #if NOISE_METHOD==0
     x = p + f;
     //return SampleLevel(state, (x+0.5)/32.0,0.0).x*2.0-1.0;
-    return tex2D(iChannel2,(x+0.5)/32.0).x*2.0-1.0;
+    return tex2D(_MainTex2,(x+0.5)/32.0).x*2.0-1.0;
 #endif
 #if NOISE_METHOD==1
     float2 uv = (p.xy+float2(37.0,239.0)*p.z) + f.xy;
@@ -157,12 +159,13 @@ float4 raymarch( in float3 ro, in float3 rd, in float3 bgcol, in float2 px )
     
     // dithered near distance
 
-///    float t = tmin + 0.1*texelFetch( iChannel1, px&1023, 0 ).x;
+///    float t = tmin + 0.1*texelFetch( _MainTex2, px&1023, 0 ).x;
     float t = tmin + 0.1*tex2D( _MainTex, px).x;
     
     // raymarch loop
     float4 sum = float4(0.0,0.0,0.0,0.0);
-    for( int i=0; i<190*kDiv; i++ )
+    [loop]
+    for( int i=0; i<50*kDiv; i++ )   //190
     {
        // step size
        float dt = max(0.05,0.02*t/float(kDiv));
