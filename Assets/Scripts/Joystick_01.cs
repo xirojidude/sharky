@@ -23,6 +23,8 @@ public class Joystick_01 : UdonSharpBehaviour
     private Vector3 joystickSpawnPosition;
     private Quaternion joystickSpawnRotation;
     private Rigidbody m_Rigidbody;
+    private float dropTime=0.0f;
+    public int dropreset=0;
  
     Quaternion JoystickZeroPoint;
     private float roll = 0f;
@@ -42,7 +44,7 @@ public class Joystick_01 : UdonSharpBehaviour
         Networking.SetOwner(player, gameObject);
         if (player.IsUserInVR()) { InVR = true; }
 //        joystickSpawnPosition = new Vector3(1.7899f,-0.5435001f,0.03769994f);
-        joystickSpawnPosition = this.transform.position;
+        joystickSpawnPosition = this.transform.localPosition;
         joystickSpawnRotation = this.transform.localRotation;
         m_Rigidbody = Ship.GetComponent<Rigidbody>();
     }
@@ -109,9 +111,21 @@ public class Joystick_01 : UdonSharpBehaviour
         vspeed = Mathf.Max(0.0f,vspeed-deceleration);
         float gravity = 9.81f * Time.deltaTime;
         LastFrameVel.y -= gravity; //add gravity
-        m_Rigidbody.AddForce(transform.up * 9.8f);
+        //m_Rigidbody.AddForce(transform.up * 9.8f);
         Ship.position += transform.up * Time.deltaTime * vspeed;
         LastFrameVel = VehicleVel;
+        if (dropreset==1) {
+            if (Time.time - dropTime >1) {
+                dropreset = 2;
+            }
+        }
+        if (dropreset==2) {
+            dropTime = 0;
+            this.transform.localPosition = joystickSpawnPosition;
+            this.transform.localRotation = joystickSpawnRotation;
+            m_Rigidbody.velocity = new Vector3(0.0f,0.0f,0.0f);
+            dropreset=0;
+        }
     }
 
     void OnPickupUseDown()
@@ -128,7 +142,7 @@ public class Joystick_01 : UdonSharpBehaviour
     {
         vspeed = 2.0f;
         Ship.Rotate( Input.GetAxis("Vertical"), 0.0f, -Input.GetAxis("Horizontal") );
-
+        dropreset = 0;
 //        float terrainHeightWhereWeAre = Terrain.activeTerrain.SampleHeight( transform.position );
 
 //        if (terrainHeightWhereWeAre > transform.position.y) {
@@ -139,14 +153,17 @@ public class Joystick_01 : UdonSharpBehaviour
 
     void OnDrop()
     {
+        dropreset = 1;
+        dropTime = Time.time;
         // reset position of joystick to original
-        this.transform.localPosition = new Vector3(1.7899f,-0.5435001f, 0.03769994f);  //.localPosition;
+ //       this.transform.localPosition = new Vector3(1.7899f,-0.5435001f, 0.03769994f);  //.localPosition;
   //      this.transform.rotation=SpawnLocation.rotation;
         // this.transform.localPosition = joystickSpawnPosition;
         // this.transform.localRotation = joystickSpawnRotation;
         this.speed = 0.0f;
         this.mode = 0;
         this.vspeed = 0.0f;
+        m_Rigidbody.velocity = new Vector3(0.0f,0.0f,0.0f);
 
     }
 }

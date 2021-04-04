@@ -3,8 +3,10 @@ Shader "Skybox/VolumetricLines"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
-    }
+        _Sound ("Texture", 2D) = "white" {}
+         _Beat ("_Beat", float) = 0.0
+         _Volume ("_Volume", float) = 0.0
+   }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -20,7 +22,11 @@ Shader "Skybox/VolumetricLines"
 
             #include "UnityCG.cginc"
 
-            uniform sampler2D _MainTex; 
+            uniform sampler2D _Sound; 
+            uniform int _SoundArrayLength = 256;
+            float _Beat;
+            uniform float _SoundArray[256];
+            uniform float _Volume;
 
             struct appdata
             {
@@ -99,7 +105,8 @@ float3 castRay( float3 ro, float3 rd, float linesSpeed )
         
         float3 lcol = 0.6 + 0.4*sin( 10.0*6.2831*h + float3(0.0,0.6,0.9) );
         
-        float m = pow( tex2D( _MainTex, float2(h*0.5,0.25) ).x, 2.0 )*(1.0+2.0*h);
+//        float m = pow( tex2D( _Sound, float2(h*0.5,0.25) ).x, 2.0 )*(1.0+2.0*h);
+        float m = pow( min(.9,_SoundArray[floor(h*0.5)]*1/max(.01,_Volume)) , 2.0 )*(1.0+2.0*h);
         
         float f = 1.0 - 4.0*dis.y*(1.0-dis.y);
         float width = 1240.0 - 1000.0*f;
@@ -121,7 +128,7 @@ float3 castRay( float3 ro, float3 rd, float linesSpeed )
                 float2 fragCoord = v.vertex;
 
                 float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
-                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                fixed4 fragColor = tex2D(_Sound, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
                 float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
@@ -136,7 +143,7 @@ float3 castRay( float3 ro, float3 rd, float linesSpeed )
 
 
     for( int i=0; i<16; i++ )
-        freqs[i] = clamp( 1.9*pow( tex2D( _MainTex, float2( 0.05 + 0.5*float(i)/16.0, 0.25 ) ).x, 3.0 ), 0.0, 1.0 );
+        freqs[i] = clamp( 1.9*pow( tex2D( _Sound, float2( 0.05 + 0.5*float(i)/16.0, 0.25 ) ).x, 3.0 ), 0.0, 1.0 );
     
     // camera   
     float3 ta = float3( 0.0, 0.0, 0.0 );

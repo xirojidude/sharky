@@ -3,7 +3,9 @@ Shader "Skybox/ProceduralTechRings"
 {
     Properties
     {
-        _MainTex ("tex2D", 2D) = "white" {}
+        _Sound ("_Sound", 2D) = "white" {}
+        _Beat ("_Beat", float) = 0.0
+         _Volume ("_Volume", float) = 0.0
     }
     SubShader
     {
@@ -20,7 +22,11 @@ Shader "Skybox/ProceduralTechRings"
 
             #include "UnityCG.cginc"
 
-            uniform sampler2D _MainTex; 
+            uniform sampler2D _Sound; 
+            uniform int _SoundArrayLength = 256;
+            float _Beat;
+            uniform float _SoundArray[256];
+            uniform float _Volume;
 
             struct appdata
             {
@@ -53,7 +59,8 @@ float2 rotate(float2 p, float a)
 
 float fft(float band)
 {
-    return tex2D( _MainTex, float2(band,0.0) ).x; // Should sample sound stream not image
+    return _SoundArray[floor(band)]*100/max(.01,_Volume);
+    //return tex2D( _Sound, float2(band,0.0) ).x; // Should sample sound stream not image
 }
 
 // iq's fast 3d noise tortured
@@ -64,9 +71,14 @@ float noise3(in float3 x)
     float3 nf = 3.0 - (2.0 * f);
     f = f * f * (nf);
     float2 uv = (p.xy + float2(37.0, 17.0+smoothstep(0.8,0.99, fft(0.))) * p.z) + f.xy;
-    float2 rg = tex2D(_MainTex, (uv + 0.5) / 256.0).yx;  //, -100.0).yx;
-    rg += tex2D(_MainTex, (uv + _Time.y) / 64.0).yx/10.0;   //, -100.0).yx/10.0;
-    rg += tex2D(_MainTex, (uv + _Time.y/3.2 + 0.5) / 100.0).zx/5.0;    //, -100.0).zx/5.0;
+    float2 rg = tex2D(_Sound, (uv.x + 0.5) / 256.0).yx;  //, -100.0).yx;
+    rg += tex2D(_Sound, (uv.x + _Time.y) / 64.0).yx/10.0;   //, -100.0).yx/10.0;
+    rg += tex2D(_Sound, (uv.x + _Time.y/3.2 + 0.5) / 100.0).zx/5.0;    //, -100.0).zx/5.0;
+
+
+
+//    rg+=_SoundArray[floor(f.y*16)]*1;
+//    rg+=_SoundArray[floor(f.x*16)]*1;
     return lerp(rg.x, rg.y, f.z);
 }
 
@@ -96,11 +108,11 @@ float3 sky(float3 p)
     float3 col;
     float v = 1.0 - abs(fbm3a(p * 4.0) * 2.0 - 1.0);
     float n = fbm3a_(p * 7.0 - 104.042);
-    v = lerp(v, pow(n, 0.3), 0.5);
+    v = lerp(v, pow(n, 0.3), 0.8);
     
     col = float3(pow(float3(v,v,v), float3(14.0, 9.0, 7.0))) * 0.8;
-    float ss = smoothstep(0.75,0.99,fbm3a_(p*6.));
-    col += float3(ss*8., 0.0, 0.0)*fft(32.);
+    float ss = .00001+smoothstep(0.75,0.99,fbm3a_(p));
+    col += float3(ss*8., 0.0, 0.0)*fft(floor((p.z+.5)*10))*100;
     return col;
 }
 
@@ -109,7 +121,7 @@ float3 sky(float3 p)
                 float2 fragCoord = v.vertex;
 
                 float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
-                fixed4 fragColor = tex2D(_MainTex, v.uv);
+                fixed4 fragColor = tex2D(_Sound, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
                 float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
@@ -122,9 +134,9 @@ float3 sky(float3 p)
     
     float3 dir = rd; //normalize(float3(uv, 1.1));
     
-    dir.yz = rotate(dir.yz, sin(t/15.+smoothstep(0.99,0.999, fft(0.))));
-    dir.xz = rotate(dir.xz, cos(t/13.));
-    dir.xy = rotate(dir.xy, cos(t/12.+smoothstep(0.5,0.999, fft(213.))));
+   // dir.yz = rotate(dir.yz, sin(t/15.+smoothstep(0.99,0.999, fft(0.))));
+    dir.xy = rotate(dir.xy, cos(t/13.));
+    dir.xz = rotate(dir.xz, cos(t/12.+smoothstep(0.5,0.999, fft(213.))));
     
     float3 col = sky(dir);
 
