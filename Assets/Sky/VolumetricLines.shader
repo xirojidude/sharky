@@ -106,7 +106,7 @@ float3 castRay( float3 ro, float3 rd, float linesSpeed )
         float3 lcol = 0.6 + 0.4*sin( 10.0*6.2831*h + float3(0.0,0.6,0.9) );
         
 //        float m = pow( tex2D( _Sound, float2(h*0.5,0.25) ).x, 2.0 )*(1.0+2.0*h);
-        float m = pow( min(.9,_SoundArray[floor(h*0.5)]*1/max(.01,_Volume)) , 2.0 )*(1.0+2.0*h);
+        float m = pow( min(.8,_SoundArray[floor(h*0.5)]*1/max(.01,_Volume)) , 2.0 )*(1.0+2.0*h);
         
         float f = 1.0 - 4.0*dis.y*(1.0-dis.y);
         float width = 1240.0 - 1000.0*f;

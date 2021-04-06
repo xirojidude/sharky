@@ -24,8 +24,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex2:
-        m_Texture: {fileID: 2800000, guid: f01f8cdc98ae69b41b5c159b1ca6230a, type: 3}
+        m_Texture: {fileID: 2800000, guid: 19e9ed84a02c02e4a9c72ed83319762d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats: []
-    m_Colors: []
+    m_Colors:
+    - _SunDir: {r: -0.11, g: 0.03, b: 0.78, a: 0}
+    - _XYZPos: {r: 1461.4, g: -18.6, b: 995, a: 0}

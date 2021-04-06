@@ -5,7 +5,9 @@ Shader "Skybox/SmallPlanet"
     {
         _MainTex ("tex2D", 2D) = "white" {}
         _MainTex2 ("tex2D", 2D) = "white" {}
-    }
+       _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -23,6 +25,7 @@ Shader "Skybox/SmallPlanet"
 
             uniform sampler2D _MainTex; 
             uniform sampler2D _MainTex2; 
+            float4 _XYZPos, _SunDir;
 
             struct appdata
             {
@@ -129,7 +132,7 @@ float3 triplanarNormal(float3 p, float3 nor, float3 w) {
 }
 
 float3 shading(float3 ro, float3 rd) {
-    float3 ld = normalize(float3(.5, 1, -.7));
+    float3 ld = normalize(_SunDir.xyz);  //normalize(float3(.5, 1, -.7));
     float3 sunCol = float3(1, .8, .5);
     float2 rp = rayProcess(ro, rd, 0., 40.);
     float3 p = ro + rp.x * rd;
@@ -169,8 +172,8 @@ float3 shading(float3 ro, float3 rd) {
         // sky color
         col = pow(getBgnd(rd), float3(6.,6,6));
         
-        float ldot = clamp(dot(rd, ld) + .01, 0., 1.);
-        float sun = pow(ldot, 200.);
+        float ldot = clamp(dot(rd, ld) + .001, 0., 1.);
+        float sun = pow(ldot, 1000.);
         col = lerp(col * pow(1. - ldot*ldot, 3.), sunCol, sun);
         //col += spe * float3(.1, 0, 0);
     }
@@ -187,7 +190,7 @@ float3 shading(float3 ro, float3 rd) {
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 //    float2 uv = (fragCoord - iResolution.xy / 2.) / iResolution.y;
 //    float3 rd = normalize(float3(uv, -1.07));
@@ -196,7 +199,7 @@ float3 shading(float3 ro, float3 rd) {
 //    float yaw = 7. * ang.x + .2 * _Time.y;
 //    float pitch = -5. * ang.y + 1. + .07 * _Time.y;
 
-    float3 camPos = ro + float3(0., 0., 12);
+    float3 camPos = ro*.01; //+ float3(0., 0., 12);
 //    camPos.yz *= rot(pitch); camPos.zx *= rot(yaw);
 //    rd.yz     *= rot(pitch);     rd.zx *= rot(yaw);
     

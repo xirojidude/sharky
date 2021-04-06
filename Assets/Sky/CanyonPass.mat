@@ -26,4 +26,4 @@ Material:
     m_Floats: []
     m_Colors:
     - _SunDir: {r: -0.11, g: 0.07, b: 0.99, a: 0}
-    - _XYZPos: {r: 1.09, g: 25.4, b: 84.73, a: 0}
+    - _XYZPos: {r: -24.7, g: 0, b: -168.16, a: 0}

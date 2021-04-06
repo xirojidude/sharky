@@ -3,8 +3,12 @@ Shader "Skybox/JaszUniverse"
 {
     Properties
     {
-        _MainTex ("tex2D", 2D) = "white" {}
-    }
+      _MainTex ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+        _Beat ("_Beat", float) = 0.0
+        _Volume ("_Volume", float) = 0.0
+   }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -15,8 +19,7 @@ Shader "Skybox/JaszUniverse"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
+ 
 
             #include "UnityCG.cginc"
 
@@ -64,8 +67,14 @@ Shader "Skybox/JaszUniverse"
 //Author: Jan Mróz (jaszunio15)
 
 
-            uniform sampler2D _MainTex; 
+             uniform sampler2D _MainTex; 
+            float4 _SunDir,_XYZPos;
+            uniform int _SoundArrayLength = 256;
+            float _Beat;
+            uniform float _SoundArray[256];
+            uniform float _Volume;
 
+  
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -174,7 +183,7 @@ float getBeat()
     float sum = 0.0;
     for (float i = 0.0; i < 16.0; i++)
     {
-        sum += tex2D(_MainTex, float2(i * 0.001 + 0.0, 0.0)).r;   
+        sum += _SoundArray[floor(i/16)]/(.1+_Volume); //tex2D(_MainTex, float2(i * 0.001 + 0.0, 0.0)).r;   
     }
     return smoothstep(0.6, 0.9, pow(sum * 0.06, 2.0));
 }

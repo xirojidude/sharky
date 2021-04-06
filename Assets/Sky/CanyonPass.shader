@@ -375,12 +375,12 @@ float3 envMap(float3 rd, float3 n){
 //    float2 uv = (fragCoord - iResolution.xy*0.5)/iResolution.y;
     
     #ifdef THREE_D
-    float sg = sign(fragCoord.x - .5*iResolution.x);
-    uv.x -= sg*.25*iResolution.x/iResolution.y;
+//    float sg = sign(fragCoord.x - .5*iResolution.x);
+//    uv.x -= sg*.25*iResolution.x/iResolution.y;
     #endif
     
     // Camera Setup.
-    float3 camPos = ro; //float3(0.0, 0.0, _Time.y*4.); // Camera position, doubling as the ray origin.
+    float3 camPos = ro*.01; //float3(0.0, 0.0, _Time.y*4.); // Camera position, doubling as the ray origin.
 
     float3 lookAt = camPos + float3(0, 0, 0.25);  // "Look At" position.
 
@@ -395,13 +395,13 @@ float3 envMap(float3 rd, float3 n){
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera, "look at," and two light floattors down the tunnel. The "path" function is 
     // synchronized with the distance function. Change to "path2" to traverse the other tunnel.
-    lookAt.xy += path(lookAt.z);
-    camPos.xy += path(camPos.z);
+//    lookAt.xy += path(lookAt.z);
+//    camPos.xy += path(camPos.z);
     //lightPos.xy += path(lightPos.z);
     
     
     #ifdef THREE_D
-    camPos.x -= sg*.15; lookAt.x -= sg*.15; lightPos.x -= sg*.15;
+//    camPos.x -= sg*.15; lookAt.x -= sg*.15; lightPos.x -= sg*.15;
     #endif
     
     
@@ -421,7 +421,7 @@ float3 envMap(float3 rd, float3 n){
     
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.
-    rd.xy = mul(rot2( path(lookAt.z).x/16. ),rd.xy);
+//    rd.xy = mul(rot2( path(lookAt.z).x/16. ),rd.xy);
 
     /*    
     // Mouse controls. I use them as a debugging device, but they can be used to look around. 

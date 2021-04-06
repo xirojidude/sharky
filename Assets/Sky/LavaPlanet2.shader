@@ -5,7 +5,9 @@ Shader "Skybox/LavaPlanet"
     {
         _MainTex ("tex2D", 2D) = "white" {}
         _MainTex1 ("tex2D", 2D) = "white" {}
-    }
+         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+   }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -28,6 +30,7 @@ Shader "Skybox/LavaPlanet"
 
            uniform sampler2D _MainTex; 
            uniform sampler2D _MainTex1; 
+            float4 _SunDir,_XYZPos;
 
             struct appdata
             {
@@ -59,7 +62,7 @@ Shader "Skybox/LavaPlanet"
                 fixed4 outColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*.0001;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
 
     outColor = float4(0,0,0,0);
@@ -71,7 +74,7 @@ Shader "Skybox/LavaPlanet"
     
     // xz is the tex2D space offset. y is the distance from
     // the max height down to the surface.
-    float3 offset = float3(0,0,0);
+    float3 offset = ro;//float3(0,0,0);
     float3 glow;
     float3 material;
     float3 landscape; 
@@ -99,10 +102,10 @@ Shader "Skybox/LavaPlanet"
             
             // Calculate offset of slice intersection
             // at this elevation.
-            offset = dir * h;
+            offset = ro+dir * h;
             
             // Add time sliding to move the camera
-            coord = offset.xz - _Time.y * 0.2 * scrollDirection;
+            coord = offset.xz; //- _Time.y * 0.2 * scrollDirection;
             
             landscape = tex2D(elevationMap, coord * 0.1).rgb;
             material = tex2D(colorMap, coord).rgb;

@@ -5,7 +5,8 @@ Shader "Skybox/DesertPassage"
     {
         _MainTex ("tex2D", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
-        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0)
+        _Sky ("Sky Color", Color) = (2., 1.4, .7,1) 
     }
     SubShader
     {
@@ -24,6 +25,7 @@ Shader "Skybox/DesertPassage"
 
             uniform sampler2D _MainTex; 
             float4 _SunDir,_XYZPos;
+            float4 _Sky;
 
             struct appdata
             {
@@ -394,7 +396,7 @@ float calculateAO( in float3 p, in float3 n)
 
 
 // Just a single color. I debated over whether to include the sun, but the dust is there and I'm saving cycles.
-float3 getSky(){ return float3(2., 1.4, .7); }
+float3 getSky(){ return _Sky.xyz; }  //float3(2., 1.4, .7); }
 
 
 /////
@@ -487,8 +489,8 @@ float getMist(in float3 ro, in float3 rd, in float3 lp, in float t){
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera and "look at" floattors down the tunnel. The "path" function is 
     // synchronized with the distance function.
-    ro.xy += path(ro.z);
-    lookAt.xy += path(lookAt.z);
+//    ro.xy += path(ro.z);
+//    lookAt.xy += path(lookAt.z);
 
     // Using the above to produce the unit ray-direction floattor.
     float FOV = 3.14159265/2.5; // FOV - Field of view.
@@ -594,9 +596,9 @@ float getMist(in float3 ro, in float3 rd, in float3 lp, in float t){
    
     // Combine the scene with the sky using some cheap volumetric substance.
     float dust = getMist(ro, rd, lp, t)*(1.-clamp((pathHeight - 5.)*.125, 0., 1.));//(-rd.y + 1.);
-    sky = getSky()*lerp(1., .75, dust);
-    col = lerp(col, sky, min(t*t*1.5/FAR/FAR, 1.)); // Quadratic fade off. More subtle.
-    //col = lerp(col, sky, min(t*.75/FAR, 1.)); // Linear fade. Much dustier. I kind of like it.
+    sky = getSky()*lerp(1., .15, dust);
+    //col = lerp(col, sky, min(t*t*1.5/FAR/FAR, 1.)); // Quadratic fade off. More subtle.
+    col = lerp(col, sky, min(t*.75/FAR, 1.)); // Linear fade. Much dustier. I kind of like it.
 
     
     // Standard way to do a square vignette. Note that the maxium value value occurs at "pow(0.5, 4.) = 1./16," 

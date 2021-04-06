@@ -819,9 +819,9 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera, "look at," and light floattor down the path. The "path" function is 
     // synchronized with the distance function.
-    ro.xy += path(ro.z);
-    lk.xy += path(lk.z);
-    lp.xy += path(lp.z);
+//    ro.xy += path(ro.z);
+//    lk.xy += path(lk.z);
+//    lp.xy += path(lp.z);
     
 
     // Using the above to produce the unit ray-direction floattor.
@@ -836,8 +836,8 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
     
     // Camera swivel - based on path position.
     float2 sw = path(lk.z);
-    rd.xy = mul(rd.xy,r2(-sw.x/32.));
-    rd.yz = mul(rd.yz,r2(-sw.y/16.));
+//    rd.xy = mul(rd.xy,r2(-sw.x/32.));
+//    rd.yz = mul(rd.yz,r2(-sw.y/16.));
     
     
     // Retrieve the background color.

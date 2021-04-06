@@ -169,6 +169,7 @@ float sfrac(float x, float sf){
 }
 
 
+
 // Compact, self-contained version of IQ's 3D value noise function.
 float n3D(float3 p){
     

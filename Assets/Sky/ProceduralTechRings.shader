@@ -59,7 +59,7 @@ float2 rotate(float2 p, float a)
 
 float fft(float band)
 {
-    return _SoundArray[floor(band)]*100/max(.01,_Volume);
+    return clamp(0,.8,_SoundArray[floor(band)]*100/max(.01,_Volume));
     //return tex2D( _Sound, float2(band,0.0) ).x; // Should sample sound stream not image
 }
 
