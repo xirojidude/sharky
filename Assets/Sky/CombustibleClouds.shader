@@ -220,10 +220,10 @@ float map(float3 p) {
     float2 a = sin(float2(1.5707963, 0) + _Time.y*0.1875); 
     float2x2 rM = float2x2(a, -a.y, a.x);
     
-    rd.xy = mul(rd.xy,rM); // Apparently, "rd.xy *= rM" doesn't work on some setups. Crazy.
+//    rd.xy = mul(rd.xy,rM); // Apparently, "rd.xy *= rM" doesn't work on some setups. Crazy.
     a = sin(float2(1.5707963, 0) + cos(_Time.y*0.1875*.7)*.7);
     rM = float2x2(a, -a.y, a.x); 
-    rd.xz = mul(rd.xz,rM);
+//    rd.xz = mul(rd.xz,rM);
 
     // Placing a light in front of the viewer and up a little. You could just make the 
     // light directional and be done with it, but giving it some point-like qualities 

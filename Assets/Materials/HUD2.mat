@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Biomine
-  m_Shader: {fileID: 4800000, guid: 3e4d22cf485d392498674bf9a1d98680, type: 3}
+  m_Name: HUD2
+  m_Shader: {fileID: 4800000, guid: af0858f113a13ba4ab5ff3b00b0ac2d3, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -24,6 +24,4 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats: []
-    m_Colors:
-    - _SunDir: {r: -0.11, g: 0.07, b: 0.99, a: 0}
-    - _XYZPos: {r: 0, g: 0, b: 0, a: 0}
+    m_Colors: []

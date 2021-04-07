@@ -6,12 +6,15 @@
         _Dir  ("Pitch Yaw Roll", Vector) = (0,0,0,0) 
         _Pos  ("Position", Vector) = (0,0,0,0) 
         _Vel ("Velocity", Vector) = (0,0,0,0)
+        _Target ("Target", Vector) = (0,0,0,0)
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+       Tags { "Queue" = "Transparent" "RenderType"="Transparent" }
         LOD 100
+           Blend SrcAlpha OneMinusSrcAlpha
 
+ 
         Pass
         {
             CGPROGRAM
@@ -37,7 +40,7 @@
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
-            float4 _Dir,_Pos_Vel;
+            float4 _Dir,_Pos,_Vel,_Target;
 
             v2f vert (appdata v)
             {
@@ -112,16 +115,16 @@ float getInnetDial(float2 st, float center, float radius) {
     
     float circle2dash1 = getBox(st, -0.254, 0.134, 0.100, lineThickness);
     circle2 += circle2dash1;
-    float circle2dash1_2 = getBox(st, -0.204, 0.134, 0.052, lineThickness * 2.);
-    circle2 += circle2dash1_2;
+//    float circle2dash1_2 = getBox(st, -0.204, 0.134, 0.052, lineThickness * 2.);
+//    circle2 += circle2dash1_2;
     float circle2dash2 = getBox(st, -0.288, 0.068, 0.031, lineThickness);
     circle2 += circle2dash2;
     float circle2dash2_2 = getBox(st, -0.247, 0.068, 0.096, lineThickness);
     circle2 += circle2dash2_2;
     float circle2dash3 = getBox(st, -0.350, 0.0, 0.215, lineThickness);
     circle2 += circle2dash3;
-    float circle2dash3_2 = getBox(st, -0.19, 0.0, 0.055, lineThickness * 2.);
-    circle2 += circle2dash3_2;
+//    float circle2dash3_2 = getBox(st, -0.19, 0.0, 0.055, lineThickness * 2.);
+//    circle2 += circle2dash3_2;
     float circle2dash3_3 = getBox(st, -0.36, 0.0, lineThickness * 2., lineThickness * 2.);
     circle2 += circle2dash3_3;
     float circle2dash4 = getBox(st, -0.288, -0.068, 0.031, lineThickness);
@@ -138,6 +141,27 @@ float getInnetDial(float2 st, float center, float radius) {
     float circle2dash5_3 = getBox(st, -0.118, -0.03, 0.01, lineThickness);
     circle2 += circle2dash5_3;
     
+    return circle2;
+}
+float getInnetTicks(float2 st, float center, float radius) {
+    float lineThickness = 0.002;
+    float sm = 0.003;
+
+    float circle2  = getBox(st, -0.24, 0.0, 0.1, lineThickness * 2.);
+//    circle2 += circle2dash3_2;
+//    float circle2dash1_2 = getBox(st, -0.204, 0.134, 0.052, lineThickness * 2.);
+    float circle2dash1_2 = getBox(st, -0.19, 0.134, 0.055, lineThickness * 2.);
+    circle2 += circle2dash1_2;
+    float circle2dash1_3 = getBox(st, -0.19, 0.067, 0.055, lineThickness * 2.);
+    circle2 += circle2dash1_3;
+    float circle2dash1_4 = getBox(st, -0.19, 0.201, 0.055, lineThickness * 2.);
+    circle2 += circle2dash1_4;
+    float circle2dash1_5 = getBox(st, -0.19, -0.067, 0.055, lineThickness * 2.);
+    circle2 += circle2dash1_5;
+    float circle2dash1_6 = getBox(st, -0.19, -0.134, 0.055, lineThickness * 2.);
+    circle2 += circle2dash1_6;
+    float circle2dash1_7 = getBox(st, -0.19, -0.201, 0.055, lineThickness * 2.);
+    circle2 += circle2dash1_7;
     return circle2;
 }
 
@@ -192,7 +216,7 @@ float getSideLine(float2 st, float left, float top, float lineThickness) {
     ));
     
     float timeFactor = 3.14 * 0.2 * cos(_Dir.z *.5); //_Time.y * 0.5);
-    float4 Dir = 3.14 * 0.2 * cos(_Dir * 0.5);
+    float4 Dir = _Dir; //3.14 * 0.2 * cos(_Dir * 0.5);
     st = getRotation(st, float2(center,center), timeFactor);
     float dial1 = getDottedCircle(st, float2(center,center), radius + 0.04, lineThickness + 0.01, sm);
     
@@ -211,15 +235,21 @@ float getSideLine(float2 st, float left, float top, float lineThickness) {
     st = getScaling(st, float2(0.0,0), -1.0, 1.0);
     
 //    st = getRotation(st, float2(center,center), 3.14 * 0.1 * sin(_Dir.z)); // _Time.y));            //Bank Angle
-    st = getRotation(st, float2(center,center), 3.14 * 1.0 * sin(_Dir.z)); // _Time.y));            //Bank Angle
+//    st = getRotation(st, float2(center,center), 3.14 * 1.0 * sin(_Dir.z*.5)); // _Time.y));            //Bank Angle
+    st = getRotation(st, float2(center,center), (_Dir.z*1)); // _Time.y));            //Bank Angle
     
+
     float innerDial = getInnetDial(st, center, radius);
+    st += float2(0, (_Dir.x-.25) *.8);   // Pitch
+    float innerTicks = getInnetTicks(st, center, radius);
     st = getScaling(st, float2(0.0,0), -1.0, 1.0);
+    innerTicks += getInnetTicks(st, center, radius);
+    st += float2(0, -(_Dir.x-.25)*.8);   // Pitch
     innerDial += getInnetDial(st, center, radius);
     st = getScaling(st, float2(0.0,0), -1.0, 1.0);
     
     
-    st = getRotation(st, float2(center,center), 3.14 / 4.);
+    st = getRotation(st, float2(center,center), 3.14 / 4.);                 // Target
     float box = getBox(st, -0.068, -0.057, 0.004, 0.115);
     box += getBox(st, 0.066, -0.057, 0.004, 0.115);
     box += getBox(st, -0.057, 0.070, 0.115, 0.004);
@@ -238,16 +268,19 @@ float getSideLine(float2 st, float left, float top, float lineThickness) {
     innerBox += getBox(st, 0.066, 0.066, 0.006, 0.006);
     innerBox += getBox(st, -0.07, 0.066, 0.006, 0.006);
     st = getRotation(st, float2(center,center), -3.14 / 4.);
+
     
-//    st = getRotation(st, float2(center,center), -3.14 * 0.1 * sin(_Dir.z)); //_Time.y));                //Bank Angle
-    st = getRotation(st, float2(center,center), -3.14 * 1.0 * sin(_Dir.z)); //_Time.y));                //Bank Angle
+//    st = getRotation(st, float2(center,center), -3.14 * 0.1 * sin(_Dir.z*.5)); //_Time.y));                //Bank Angle
+//    st = getRotation(st, float2(center,center)i -3.14 * 1.0 * sin(_Dir.z*.5)); //_Time.y));                //Bank Angle
+    st = getRotation(st, float2(center,center), -(_Dir.z*1)); //_Time.y));                //Bank Angle
     
-    float sideMarks = step(18., ((floor((st.y + 0.1 * sin(_Time.y)) / 0.002))% 20.0));
+//    float sideMarks = step(18., ((floor((st.y + 0.1 * sin(_Time.y)) / 0.002))% 20.0));   // Speed
+    float sideMarks = step(18., ((floor((st.y + 0.1 * _Vel.z) / 0.002))% 20.0));   // Speed
     sideMarks *= (
         (step(-0.44, st.x) - step(-0.415, st.x)) +
         (step(0.415, st.x) - step(0.44, st.x))
     );
-    sideMarks *= (step(-0.12, st.y) - step(0.12, st.y));
+    sideMarks *= (step(-0.12, st.y) - step(0.12, st.y));            //Altitude
     
     float sideMarksBox = getBox(st, -0.45, -0.015, 0.04, 0.03);
     sideMarksBox -= getBox(st, -0.448, -0.013, 0.036, 0.026);
@@ -266,13 +299,16 @@ float getSideLine(float2 st, float left, float top, float lineThickness) {
     color += float3(0.39,0.61,0.65) * dial1;
     color += float3(0.39,0.61,0.65) * dial2;
     color += float3(0.39,0.61,0.65) * innerDial;
+    color += float3(0.39,0.61,0.65) * innerTicks;
     color += float3(0.39,0.61,0.65) * sideLine;
     color += float3(0.39,0.61,0.65) * sideMarks;
     color += float3(0.39,0.61,0.65) * sideMarksBox;
     color += float3(0.995,0.425,0.003) * box;
     color += float3(0.96, 0.98, 0.8) * innerBox;
+
+     float alpha = (color.r + color.g + color.b)*.30;
     
-    fragColor = float4(color,1.0);
+    fragColor = float4(color,alpha);
                 return fragColor;
             }
             ENDCG

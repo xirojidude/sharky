@@ -409,7 +409,7 @@ float3 eMap(float3 rd, float3 sn){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*.01+ _XYZPos;                                             // ray origin
 
     
     // Screen coordinates.
@@ -417,7 +417,7 @@ float3 eMap(float3 rd, float3 sn){
     
     // Camera Setup.
     float3 lookAt = float3(0, 1, _Time.y*2. + 0.1);  // "Look At" position.
-    float3 camPos = ro + lookAt + float3(0.0, 0.0, -0.1); // Camera position, doubling as the ray origin.
+    float3 camPos = ro ;//+ lookAt + float3(0.0, 0.0, -0.1); // Camera position, doubling as the ray origin.
 
  
     // Light positioning. 
@@ -426,9 +426,9 @@ float3 eMap(float3 rd, float3 sn){
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera, "look at," and light floattor down the tunnel. The "path" function is 
     // synchronized with the distance function.
-    lookAt.xy += path(lookAt.z);
-    camPos.xy += path(camPos.z);
-    lightPos.xy += path(lightPos.z);
+//    lookAt.xy += path(lookAt.z);
+//    camPos.xy += path(camPos.z);
+//    lightPos.xy += path(lightPos.z);
 
     // Using the above to produce the unit ray-direction floattor.
     float FOV = 3.14159265/2.; // FOV - Field of view.
@@ -445,7 +445,7 @@ float3 eMap(float3 rd, float3 sn){
     
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.
-    rd.xy = mul(rot2( path(lookAt.z).x/16. ),rd.xy);
+//    rd.xy = mul(rot2( path(lookAt.z).x/16. ),rd.xy);
         
     // Standard ray marching routine. I find that some system setups don't like anything other than
     // a "break" statement (by itself) to exit. 

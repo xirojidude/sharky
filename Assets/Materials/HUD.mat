@@ -25,6 +25,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats: []
     m_Colors:
-    - _Dir: {r: 0, g: 0, b: 0, a: 0}
+    - _Dir: {r: 0.83, g: -1.64, b: -0.06, a: 0}
     - _Pos: {r: 0, g: 0, b: 0, a: 0}
-    - _Vel: {r: 0, g: 0, b: 0, a: 0}
+    - _Target: {r: 0, g: 0, b: 0, a: 0}
+    - _Vel: {r: 3.75, g: 0, b: 0, a: 0}

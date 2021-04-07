@@ -200,9 +200,9 @@ float terrain(float2 p){
     // is to increase the frequency by a larger amount from layer to layer.
     for (int i=0; i<5; i++){
         
-        res += n2D(p)*a; // Add the noise value for this layer - multiplied by the amplitude.
-        //res += abs(n2D3(p) - .5)*a; // Interesting variation.
-        //res += n2D3(p)*abs(a)*.8; // Another one.
+        //res += n2D(p)*a; // Add the noise value for this layer - multiplied by the amplitude.
+        res += abs(n2D(p) - .5)*a; // Interesting variation.
+        //res += n2D(p)*abs(a)*.8; // Another one.
         
         // Scaling the position and doing some skewing at the same time. The skewing isn't 
         // mandatory, but it tends to give more varied - and therefore - interesting results.
@@ -634,7 +634,7 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*.05+ _XYZPos;                                             // ray origin
 
     // Screen coordinates.
 //    float2 uv = fragCoord; //(fragCoord - iResolution.xy*.5)/iResolution.y;
@@ -658,9 +658,9 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera, "look at," and light floattor down the path. The "path" function is 
     // synchronized with the distance function.
-    ro.xy += path(ro.z);
-    lk.xy += path(lk.z);
-    lp.xy += path(lp.z);
+//    ro.xy += path(ro.z);
+//    lk.xy += path(lk.z);
+//    lp.xy += path(lp.z);
     
 
     // Using the above to produce the unit ray-direction floattor.
