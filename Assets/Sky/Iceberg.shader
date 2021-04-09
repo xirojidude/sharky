@@ -1,4 +1,4 @@
-﻿
+
 Shader "Skybox/Iceberg"
 
 {
@@ -123,6 +123,16 @@ float Hash2d(float2 uv)
     float f = uv.x + uv.y * 37.0;
     return frac(sin(f)*104003.9);
 }
+float noise2d(float2 uv)
+{
+    float2 fr = frac(uv.xy);
+    float2 fl = floor(uv.xy);
+    float h00 = Hash2d(fl);
+    float h10 = Hash2d(fl + zeroOne.yx);
+    float h01 = Hash2d(fl + zeroOne);
+    float h11 = Hash2d(fl + zeroOne.yy);
+    return lerpP(lerpP(h00, h10, fr.x), lerpP(h01, h11, fr.x), fr.y);
+}
 float Hash3d(float3 uv)
 {
     float f = uv.x + uv.y * 37.0 + uv.z * 521.0;
@@ -141,16 +151,7 @@ float noise1d(float uv)
     float h1 = Hash11(fl + 1.0);
     return lerpP(h0, h1, fr);
 }
-float noise2d(float2 uv)
-{
-    float2 fr = frac(uv.xy);
-    float2 fl = floor(uv.xy);
-    float h00 = Hash2d(fl);
-    float h10 = Hash2d(fl + zeroOne.yx);
-    float h01 = Hash2d(fl + zeroOne);
-    float h11 = Hash2d(fl + zeroOne.yy);
-    return lerpP(lerpP(h00, h10, fr.x), lerpP(h01, h11, fr.x), fr.y);
-}
+
 float noiseValue(float3 uv)
 {
     float3 fr = frac(uv.xyz);

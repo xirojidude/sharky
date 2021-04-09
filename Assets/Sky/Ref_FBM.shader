@@ -73,3 +73,117 @@ Shader "Skybox/Empty"
         }
     }
 }
+
+//------------------------------------------------------------------------
+// Alps
+float FBM( float3 p )
+{
+    
+    p *= .015;
+    p.xz *= .3;
+    //p.zy -= _Time.y * .04;
+    
+    float f;
+    f  = 0.5000  * Noise(p); p = p * 3.02; //p.y -= gTime*.2;
+    f += 0.2500  * Noise(p); p = p * 3.03; //p.y += gTime*.06;
+    f += 0.1250  * Noise(p); p = p * 4.01;
+    f += 0.0625  * Noise(p); p = p * 4.023;
+    //f += 0.03125 * Noise(p);
+    return f;
+}
+
+//------------------------------------------------------------------------
+// DesertCanyon
+// Simple fBm to produce some clouds.
+float fbm(in float3 p){
+    
+    // Four layers of 3D noise.
+    return .5333*noise3D(p) + .2667*noise3D(p*2.02) + .1333*noise3D(p*4.03) + .0667*noise3D(p*8.03);
+
+}
+
+//------------------------------------------------------------------------
+// DesertSand
+// Gradient noise fBm.
+float fBm(in float2 p){
+    
+    return gradN2D(p)*.57 + gradN2D(p*2.)*.28 + gradN2D(p*4.)*.15;
+    
+}
+
+
+//------------------------------------------------------------------------
+// GalaxyNavigator
+// fractional Brownian motion
+float fbmslow( float3 p )
+{
+  float f = 0.5000*noise( p ); p = mul(m,p*1.2);
+  f += 0.2500*noise( p ); p = mul(m,p*1.3);
+  f += 0.1666*noise( p ); p = mul(m,p*1.4);
+  f += 0.0834*noise( p ); p = mul(m,p*1.84);
+  return f;
+}
+
+float fbm( float3 p )
+{
+  float f = 0., a = 1., s=0.;
+  f += a*noise( p ); p = mul(m,p*1.149); s += a; a *= .75;
+  f += a*noise( p ); p = mul(m,p*1.41); s += a; a *= .75;
+  f += a*noise( p ); p = mul(m,p*1.51); s += a; a *= .65;
+  f += a*noise( p ); p = mul(m,p*1.21); s += a; a *= .35;
+  f += a*noise( p ); p = mul(m,p*1.41); s += a; a *= .75;
+  f += a*noise( p ); 
+  return f/s;
+}
+
+
+
+//------------------------------------------------------------------------
+// JetStream
+float fbm(float3 p)
+{
+    float3 q = p;
+    //q.xy = rotate(p.xy, _Time.y);
+    
+    p += (nse3d(p * 3.0) - 0.5) * 0.3;
+    
+    //float v = nse3d(p) * 0.5 + nse3d(p * 2.0) * 0.25 + nse3d(p * 4.0) * 0.125 + nse3d(p * 8.0) * 0.0625;
+    
+    //p.y += _Time.y * 0.2;
+    
+    float mtn = _Time.y * 0.15;
+    
+    float v = 0.0;
+    float fq = 1.0, am = 0.5;
+    for(int i = 0; i < 6; i++)
+    {
+        v += nse3d(p * fq + mtn * fq) * am;
+        fq *= 2.0;
+        am *= 0.5;
+    }
+    return v;
+}
+
+float fbmHQ(float3 p)
+{
+    float3 q = p;
+    q.xy = rotate(p.xy, _Time.y);
+    
+    p += (nse3d(p * 3.0) - 0.5) * 0.4;
+    
+    //float v = nse3d(p) * 0.5 + nse3d(p * 2.0) * 0.25 + nse3d(p * 4.0) * 0.125 + nse3d(p * 8.0) * 0.0625;
+    
+    //p.y += _Time.y * 0.2;
+    
+    float mtn = _Time.y * 0.2;
+    
+    float v = 0.0;
+    float fq = 1.0, am = 0.5;
+    for(int i = 0; i < 9; i++)
+    {
+        v += nse3d(p * fq + mtn * fq) * am;
+        fq *= 2.0;
+        am *= 0.5;
+    }
+    return v;
+}

@@ -19,7 +19,7 @@ public class Joystick_01 : UdonSharpBehaviour
     public float deceleration = 0.005f;
     private float thrust = 0.0f;
     private VRCPlayerApi player;
-    private float smooth = 1.1f;
+    private float smooth = 2.1f;
     private Vector3 joystickSpawnPosition;
     private Quaternion joystickSpawnRotation;
     private Rigidbody m_Rigidbody;
@@ -34,7 +34,7 @@ public class Joystick_01 : UdonSharpBehaviour
     [System.NonSerializedAttribute] [UdonSynced(UdonSyncMode.Linear)] public Vector3 RotationInputs;
     [System.NonSerializedAttribute] public bool Piloting = false;
     [System.NonSerializedAttribute] public bool InEditor = true;
-    [System.NonSerializedAttribute] public bool InVR = false;
+ //   [System.NonSerializedAttribute] public bool InVR = false;
     [System.NonSerializedAttribute] public bool Passenger = false;
     [System.NonSerializedAttribute] public Vector3 LastFrameVel = Vector3.zero;
 
@@ -42,7 +42,7 @@ public class Joystick_01 : UdonSharpBehaviour
     {
         player = Networking.LocalPlayer;
         Networking.SetOwner(player, gameObject);
-        if (player.IsUserInVR()) { InVR = true; }
+//        if (player.IsUserInVR()) { InVR = true; }
 //        joystickSpawnPosition = new Vector3(1.7899f,-0.5435001f,0.03769994f);
         joystickSpawnPosition = this.transform.localPosition;
         joystickSpawnRotation = this.transform.localRotation;
@@ -62,14 +62,14 @@ public class Joystick_01 : UdonSharpBehaviour
 
         //float pitch = (transform.rotation * Quaternion.Euler(180, 0, 0)).eulerAngles.x;
         //float roll = 180-(transform.rotation * Quaternion.Euler(0, 0, 180)).eulerAngles.z;
-        Debug.Log("ShipPitch:" + shippitch + "  ShipRoll:" + shiproll + "  ShipHeading:" + shipyaw + ")");
+ //       Debug.Log("ShipPitch:" + shippitch + "  ShipRoll:" + shiproll + "  ShipHeading:" + shipyaw + ")");
 
         // Quaternion bodyDirection =player.GetRotation();
         // Vector3 bodyVector = bodyDirection.eulerAngles;
         // Debug.Log("body(" + bodyVector.x + ", " + bodyVector.y + ", " + bodyVector.z + ")");
 
     //    Vector3 shipVector = Ship.rotation.eulerAngles;
-        Debug.Log("ship(" + Ship.rotation.eulerAngles.x + ", " + Ship.rotation.eulerAngles.y + ", " + Ship.rotation.eulerAngles.z + ") LocalTransforn(" + transform.localEulerAngles.x + ", " + transform.localEulerAngles.y + ", " + transform.localEulerAngles.z + ")");
+//        Debug.Log("ship(" + Ship.rotation.eulerAngles.x + ", " + Ship.rotation.eulerAngles.y + ", " + Ship.rotation.eulerAngles.z + ") LocalTransforn(" + transform.localEulerAngles.x + ", " + transform.localEulerAngles.y + ", " + transform.localEulerAngles.z + ")");
 
         // Quaternion headDirection = player.GetBoneRotation( HumanBodyBones.Head );
         // Vector3 headVector = headDirection.eulerAngles;
@@ -79,7 +79,7 @@ public class Joystick_01 : UdonSharpBehaviour
 //        Quaternion newDirection = Quaternion.FromToRotation(shipVector,headVector);
         Quaternion newDirection = transform.localRotation; 
         // Roll, Yaw, Pitch
-        newDirection *= Quaternion.Euler(-roll, -90, 15); // make 0,0,0 be center of players view. compensate for 2 degrees of roll drift
+        newDirection *= Quaternion.Euler(-shiproll*180.0f/3.14159f, -90f, 15f); // make 0,0,0 be center of players view. compensate for 2 degrees of roll drift
 
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.

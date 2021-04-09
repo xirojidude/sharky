@@ -134,7 +134,6 @@ float smax(float a, float b, float s){
 }
 
 
-/*
 // Dave's hash function. More reliable with large values, but will still eventually break down.
 //
 // Hash without Sine
@@ -156,9 +155,9 @@ float2 hash22(float2 p){
     
 
 }
-*/
 
 
+/*
 #define RIGID
 // Standard 2x2 hash algorithm.
 float2 hash22(float2 p) {
@@ -175,8 +174,42 @@ float2 hash22(float2 p) {
     #endif
 
 }
+*/
+
+float2 nmzHash22(float2 q)
+{
+    uint2 p =  uint2(asint(q)); //uint2(ivec2(q));
+    p = p*uint2(3266489917U, 668265263U) + p.yx;
+    p = p*(p.yx^(p >> 15U));
+    float2 a = float2(p^(p >> 16U));
+    uint2 b = (1.0/float2(0xffffffffU,0xffffffffU));
+    return a*b;
+}
 
 
+/*
+const float2 zeroOne = float2(0.0, 1.0);
+float lerpP(float f0, float f1, float a)
+{
+    return lerp(f0, f1, a*a*(3.0-2.0*a));
+}
+// noise functions
+float Hash2d(float2 uv)
+{
+    float f = uv.x + uv.y * 37.0;
+    return frac(sin(f)*104003.9);
+}
+float gradN2D_new(float2 uv)  //noise2d
+{
+    float2 fr = frac(uv.xy);
+    float2 fl = floor(uv.xy);
+    float h00 = Hash2d(fl);
+    float h10 = Hash2d(fl + zeroOne.yx);
+    float h01 = Hash2d(fl + zeroOne);
+    float h11 = Hash2d(fl + zeroOne.yy);
+    return lerpP(lerpP(h00, h10, fr.x), lerpP(h01, h11, fr.x), fr.y);
+}
+*/
 
 // Gradient noise. Ken Perlin came up with it, or a version of it. Either way, this is
 // based on IQ's implementation. It's a pretty simple process: Break space into squares, 
@@ -219,11 +252,48 @@ float fBm(in float2 p){
     
 }
 
+/////
+// Code block to produce three layers of fine dust. Not sophisticated at all.
+// If you'd like to see a much more sophisticated version, refer to Nitmitz's
+// Xyptonjtroz example. Incidently, I wrote this off the top of my head, but
+// I did have that example in mind when writing this.
+float trig3(in float3 p){
+    p = cos(p*2. + (cos(p.yzx) + 1.)*1.57);// + _Time.y*1.
+    return dot(p, float3(0.1666,0.1666,0.1666)) + 0.5;
+}
+
+// Basic low quality noise consisting of three layers of rotated, mutated 
+// trigonometric functions. Needs work, but it's OK for this example.
+float trigNoise3D(in float3 p){
+
+    // 3D transformation matrix.
+    const float3x3 m3RotTheta = float3x3(0.25, -0.866, 0.433, 0.9665, 0.25, -0.2455127, -0.058, 0.433, 0.899519 )*1.5;
+  
+    float res = 0.;
+
+    float t = trig3(p*3.14159265);
+    p += (t);
+    p = mul(m3RotTheta,p);
+    //p = (p+0.7071)*1.5;
+    res += t;
+    
+    t = trig3(p*3.14159265); 
+    p += (t)*0.7071;
+    p = mul(m3RotTheta,p);
+     //p = (p+0.7071)*1.5;
+    res += t*0.7071;
+
+    t = trig3(p*3.14159265);
+    res += t*0.5;
+     
+    return res/2.2071;
+}
+
 
 // Cheap and nasty 2D smooth noise function with inbuilt hash function - based on IQ's 
 // original. Very trimmed down. In fact, I probably went a little overboard. I think it 
 // might also degrade with large time values. I'll swap it for something more robust later.
-float n2D(float2 p) {
+float n2D_orig(float2 p) {
 
     float2 i = floor(p); p -= i; 
     //p *= p*p*(p*(p*6. - 15.) + 10.);
@@ -237,6 +307,19 @@ float n2D(float2 p) {
     return dot( mul(innerfrac , float2(1. - p.y, p.y))
                 , float2(1. - p.x, p.x) 
                 );
+
+}
+
+
+// Cheap and nasty 2D smooth noise function, based on IQ's original. Very trimmed down. In fact,
+// I probably went a little overboard. I think it might also degrade with large time values. I'll 
+// swap it for something more robust later.
+float n2D(float2 p) {
+
+    float2 f = frac(p); p -= f; f *= f*(3. - f*2.);  
+    
+    return dot(mul(float2x2(frac(sin(float4(0, 41, 289, 330) + dot(p, float2(41, 289)))*43758.5453)),
+                float2(1. - f.y, f.y)), float2(1. - f.x, f.x) );
 
 }
 
@@ -286,9 +369,9 @@ float sandL(float2 p){
     // I feel that rotating the underlying lerping layers adds a little variety. Although, it's not
     // completely necessary.
     q = mul(rot2(3.14159/4.),p);
-    //float c = lerp(grad1, grad2, smoothstep(.1, .9, n2D(q*float2(8))));//smoothstep(.2, .8, n2D(q*8.))
-    //float c = lerp(grad1, grad2, n2D(q*float2(6)));//smoothstep(.2, .8, n2D(q*8.))
-    //float c = lerp(grad1, grad2, dot(sin(q*12. - cos(q.yx*12.)), float2(.25)) + .5);//smoothstep(.2, .8, n2D(q*8.))
+    //float c = lerp(grad1, grad2, smoothstep(.1, .9, n2D(q*float2(8,8))));//smoothstep(.2, .8, n2D(q*8.))
+    //float c = lerp(grad1, grad2, n2D(q*float2(6,6)));//smoothstep(.2, .8, n2D(q*8.))
+    //float c = lerp(grad1, grad2, dot(sin(q*12. - cos(q.yx*12.)), float2(.25,.25)) + .5);//smoothstep(.2, .8, n2D(q*8.))
     
     // The lerpes above will work, but I wanted to use a subtle screen blend of grad1 and grad2.
     float a2 = dot(sin(q*12. - cos(q.yx*12.)), float2(.25,.25)) + .5;
@@ -330,7 +413,7 @@ float sand(float2 p){
     
 /*   
     // Optional screen blending of the layers. I preferred the lerp method above.
-    float a2 = gradN2D(p*float2(4));
+    float a2 = gradN2D(p*float2(4,4));
     float a1 = 1. - a2;
     
     // Screen blend.
@@ -503,7 +586,7 @@ float3 doBumpMap( sampler2D tx, in float3 p, in float3 n, float bf){
 
 // Compact, self-contained version of IQ's 3D value noise function. I have a transparent noise
 // example that explains it, if you require it.
-float n3D(in float3 p){
+float n3D_orig(in float3 p){
     
     const float3 s = float3(113, 157, 1);
     float3 ip = floor(p); p -= ip; 
@@ -512,6 +595,36 @@ float n3D(in float3 p){
     h = lerp(frac(sin(h)*43758.5453), frac(sin(h + s.x)*43758.5453), p.x);
     h.xy = lerp(h.xz, h.yw, p.y);
     return lerp(h.x, h.y, p.z); // Range: [0, 1].
+}
+
+// More concise, self contained version of IQ's original 3D noise function.
+float n3D(in float3 p){
+    
+    // Just some random figures, analogous to stride. You can change this, if you want.
+    const float3 s = float3(7, 157, 113);
+    
+    float3 ip = floor(p); // Unique unit cell ID.
+    
+    // Setting up the stride floattor for randomization and interpolation, kind of. 
+    // All kinds of shortcuts are taken here. Refer to IQ's original formula.
+    float4 h = float4(0., s.yz, s.y + s.z) + dot(ip, s);
+    
+    p -= ip; // Cell's fracional component.
+    
+    // A bit of cubic smoothing, to give the noise that rounded look.
+    p = p*p*(3. - 2.*p);
+    
+    // Standard 3D noise stuff. Retrieving 8 random scalar values for each cube corner,
+    // then interpolating along X. There are countless ways to randomize, but this is
+    // the way most are familar with: frac(sin(x)*largeNumber).
+    h = lerp(frac(sin(h)*43758.5453), frac(sin(h + s.x)*43758.5453), p.x);
+    
+    // Interpolating along Y.
+    h.xy = lerp(h.xz, h.yw, p.y);
+    
+    // Interpolating along Z, and returning the 3D noise value.
+    return lerp(h.x, h.y, p.z); // Range: [0, 1].
+    
 }
 
 
@@ -778,8 +891,8 @@ float getMist(in float3 ro, in float3 rd, in float3 lp, in float t){
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera and "look at" floattors down the tunnel. The "path" function is 
     // synchronized with the distance function.
-    ro.xy += path(ro.z);
-    lookAt.xy += path(lookAt.z);
+//    ro.xy += path(ro.z);
+//    lookAt.xy += path(lookAt.z);
     
     // Raising the camera up and down with the terrain function and tilting it up or down
     // according to the slope. It's subtle, but it adds to the immersiveness of that mind 
@@ -790,8 +903,8 @@ float getMist(in float3 ro, in float3 rd, in float3 lp, in float t){
     //slope = smoothstep(-.15, 1.15, (slope*.5 + .5)) - .5; // Smoothing the slope... Needs work.
      
     // Raising the camera with the terrain.
-    ro.y += sfH2; 
-    lookAt.y += sfH2;
+//    ro.y += sfH2; 
+//    lookAt.y += sfH2;
     
  
     // Using the above to produce the unit ray-direction floattor.
@@ -805,10 +918,10 @@ float getMist(in float3 ro, in float3 rd, in float3 lp, in float t){
     
     // Swiveling the camera about the XY-plane (from left to right) when turning corners.
     // Naturally, it's synchronized with the path in some kind of way.
-    rd.xy = mul(rot2( path(lookAt.z).x/96.),rd.xy);
+//    rd.xy = mul(rot2( path(lookAt.z).x/96.),rd.xy);
     
     // Subtle up and down tilt, or camera pitch, if you prefer.
-    rd.yz = mul(rot2(-slope/3.),rd.yz);
+//    rd.yz = mul(rot2(-slope/3.),rd.yz);
     
     // Usually, you'd just make this a unit directional light, and be done with it, but I
     // like some of the angular subtleties of point lights, so this is a point light a

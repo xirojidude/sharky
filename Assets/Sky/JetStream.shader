@@ -130,7 +130,7 @@ float nse3d(in float3 x)
     float3 f = frac(x);
     f = f * f * (3.0 - 2.0 * f);
     float2 uv = (p.xy + float2(37.0, 17.0) * p.z) + f.xy;
-    float2 rg = tex2D( _MainTex, (uv+.5)/256.).yx;               //tex2DLod( _MainTex, (uv+.5)/256., 0.).yx;
+    float2 rg = tex2Dlod(_MainTex, float4((uv+.5)/256.,0,0)).yz;   //tex2D( _MainTex, (uv+.5)/256.).yx;               //tex2DLod( _MainTex, (uv+.5)/256., 0.).yx;
     return lerp(rg.x, rg.y, f.z);
 }
 
@@ -348,7 +348,7 @@ float arcc(float2 p, float sd)
     float2 drh = drop(uv);
     
     float camtm = _Time.y * 0.15;
-     ro = float3(cos(camtm), 0.0, camtm);
+    ro = _XYZPos; ///+ float3(cos(camtm), 0.0, camtm);
     //float3 rd = normalize(float3(uv, 1.2));
     rd.xz = rotate(rd.xz, sin(camtm) * 0.4);
     rd.yz = rotate(rd.yz, sin(camtm * 1.3) * 0.4);
@@ -419,10 +419,10 @@ float arcc(float2 p, float sd)
         arclight += exp(abs(arcz - tunRef.p.z) * -0.3) * frac(sin(arcseed) * 198721.6231) * arcint;
     }
     float3 arccol = float3(0.9, 0.7, 0.7);
-//    col += arclight * arccol * 0.5;
-//    col = lerp(col, arccol, clamp(arcv, 0.0, 1.0));
-//    col = pow(col, float3(1.0, 0.8, 0.5) * 1.5) * 1.5;
-   // col = pow(col, float3(1.0 / 2.2,1.0 / 2.2,1.0 / 2.2));
+    col += arclight * arccol * 0.5;
+    col = lerp(col, arccol, clamp(arcv, 0.0, 1.0));
+    col = pow(col, float3(1.0, 0.8, 0.5) * 1.5) * 1.5;
+    col = pow(col, float3(1.0 / 2.2,1.0 / 2.2,1.0 / 2.2));
     fragColor = float4(col, 1.0);
 
 

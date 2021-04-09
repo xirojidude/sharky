@@ -1,4 +1,4 @@
-﻿
+
 Shader "Skybox/IceMountains"
 {
     Properties
@@ -49,12 +49,12 @@ Shader "Skybox/IceMountains"
 
 float2x2 m=float2x2(.8,-.6,.6,.8);
 
-float g(float2 p){
+float g (float2 p) {
     float e=abs(sin(p.x+sin(p.y)));p=m*p;
     return .1*(e+sin(p.x+sin(p.y)));
 }
 
-float n(float2 p){
+float n (float2 p){
     p*=.1;
     float s=5.,t=.9;
     for(int i=0;i<9;i++)
@@ -74,7 +74,7 @@ float n(float2 p){
                 float3 ro = _WorldSpaceCameraPos.xyz+_XYZPos;                                             // ray origin
 
     float v=_Time.y*2.,u=sin(v*.1),x=.0,p=.0,o=.0;
-    float3 r=float3(fragCoord/iResolution.xy-1.,0),z,y;
+    float3 r=rd;  //float3(fragCoord/iResolution.xy-1.,0),z,y;
     for(int d=0;d<288;d++)        
         if (p*.0002<=x)
             z=float3(0,-8.*g(float2(0,v)*.1),v)+p*normalize(float3(r.x-u,r.y*.3+.1,2)),x=z.y+n(z.xz),p+=x,o++;

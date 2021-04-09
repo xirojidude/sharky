@@ -33,11 +33,11 @@ if (RenderSettings.skybox.HasProperty("_Beat"))
     RenderSettings.skybox.SetFloatArray("_SoundArray",fftL);
     RenderSettings.skybox.SetFloat("_Beat",beat);
     RenderSettings.skybox.SetFloat("_Volume",volume);
-    Debug.Log("_Beat parameter set to " + beat + " on skybox at volume "+volume);
+//    Debug.Log("_Beat parameter set to " + beat + " on skybox at volume "+volume);
 }
 else
 {
-    Debug.Log("No _Beats parameter on skybox");
+//    Debug.Log("No _Beats parameter on skybox");
 }
 // matBlock.SetFloatArray("_ArrayParams",paramData);
 // renderer.SetMaterialPropertyBlock(matBlock);
