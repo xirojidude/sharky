@@ -6,6 +6,12 @@ Shader "Skybox/RockyGorge"
         _MainTex ("tex2D", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+        _T1 ("T1", Float) = 8.
+        _T2 ("T2", Float) = .5
+        _T3 ("T3", Float) = 2.72
+        _T4 ("T4", Float) = .5
+        _T5 ("T5", Float) = .8
+
     }
     SubShader
     {
@@ -24,6 +30,7 @@ Shader "Skybox/RockyGorge"
 
             uniform sampler2D _MainTex; 
             float4 _SunDir,_XYZPos;
+            float _T1,_T2,_T3,_T4,_T5;
 
             struct appdata
             {
@@ -187,13 +194,13 @@ float smin(float a, float b , float s){
 // other than noise, like Voronoi, sinusoidal variations, triangle noise, etc.
 float terrain(float2 p){
     
-    p /= 8.; // Choosing a suitable starting frequency.
+    p /= _T1; //8.; // Choosing a suitable starting frequency.
     
     // Edging the terrain surfacing into a position I liked more. Not really necessary though.
-    p += .5; 
+    p += _T2; //.5; 
 
     // Amplitude, amplitude total, and result variables.
-    float a = 1., sum = 0., res = 0.;
+    float a = a = 1., sum = 0., res = 0.;
 
     // Only five layers. More layers would be nicer, but cycles need to be taken into
     // consideration. A simple way to give the impression that more layers are being added
@@ -201,14 +208,14 @@ float terrain(float2 p){
     for (int i=0; i<5; i++){
         
         //res += n2D(p)*a; // Add the noise value for this layer - multiplied by the amplitude.
-        res += abs(n2D(p) - .5)*a; // Interesting variation.
-        //res += n2D(p)*abs(a)*.8; // Another one.
+        res +=  abs(n2D(p) - _T4)*a; //abs(n2D(p) - .5)*a; // Interesting variation.
+        //res += n2D(p)*abs(a)*_T5; // Another one.       //n2D(p)*abs(a)*.8; // Another one.
         
         // Scaling the position and doing some skewing at the same time. The skewing isn't 
         // mandatory, but it tends to give more varied - and therefore - interesting results.
         // IQ uses this combination a bit, so I'll assume he came up with the figures. I've 
         // tried other figures, but I tend to like these ones as well.      
-        p = mul(float2x2(1, -.75, .75, 1),p*2.72);
+        p = mul(float2x2(1, -.75, .75, 1),p*_T3); //2.72
         //p *= 3.2; // No skewing. Cheaper, but less interesting.
         
         sum += a; // I reasoned that the sum will always be positive.

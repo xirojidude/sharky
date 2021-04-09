@@ -68,7 +68,7 @@ Shader "Skybox/NeptuneRacing"
 
 #define PI 3.141596
 float3 sunLight  = normalize( float3(  0.35, 0.2,  0.3 ) );
-float3 moon  = float3(  45000., 30000.0,  -30000. );
+float3 moon  = float3(  45000., -30000.0,  -30000. );
 const float3 sunColour = float3(.4, .6, 1.);
 #define FOG_COLOUR float3(0.07, 0.05, 0.05)
 float4 aStack[2];
