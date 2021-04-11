@@ -71,6 +71,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StereoEnabled: 0
+    - _TimeOffset: -371.2
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:

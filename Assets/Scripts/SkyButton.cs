@@ -13,6 +13,11 @@ public class SkyButton : UdonSharpBehaviour
     public Material skybox;
     public VRCAVProVideoPlayer videoPlayer;
     public VRCUrl  soundUrl;
+    public GameObject Sun;
+    public GameObject Moon;
+    public bool  showSun = true;
+    public bool  showMoon = false;
+
 
     public override void Interact()
     {
@@ -20,6 +25,14 @@ public class SkyButton : UdonSharpBehaviour
         if (videoPlayer!=null) {
             videoPlayer.LoadURL(soundUrl);
             //videoPlayer.play();
+        }
+        if (Sun !=null) 
+        {
+            Sun.SetActive(showSun);
+        }
+        if (Moon != null)
+        {
+            Moon.SetActive(showMoon);
         }
     }
 }

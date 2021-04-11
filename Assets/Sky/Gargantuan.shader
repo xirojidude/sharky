@@ -5,6 +5,14 @@ Shader "Skybox/Gargantuan"
     {
         _MainTex ("tex2D", 2D) = "white" {}
         _MainTex2 ("tex2D", 2D) = "white" {}
+        _SunDir ("Sun Dir", Vector) = (0,0,-16,0) 
+        _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0)
+        _Radius ("Radius", float) = .1
+        _Inner ("Inner", float) = .8
+        _Outer ("Outer", float) = 6
+        _Thickness ("Thickness", float) = .15
+        _Mass ("Mass", float) = .1
+
     }
     SubShader
     {
@@ -23,6 +31,8 @@ Shader "Skybox/Gargantuan"
 
             uniform sampler2D _MainTex; 
             uniform sampler2D _MainTex2; 
+            float4 _SunDir,_XYZPos;
+            float _Radius,_Inner,_Outer,_Thickness,_Mass;
 
             struct appdata
             {
@@ -98,12 +108,12 @@ BlackHole gargantua;
 Camera camera;
 
 void initScene() {
-    gargantua.position_ = float3(0.0, 0.0, -16.0 );
-    gargantua.radius_ = 0.1;
-    gargantua.ring_radius_inner_ = gargantua.radius_ + 0.8;
-    gargantua.ring_radius_outer_ = 6.0;
-    gargantua.ring_thickness_ = 0.15;
-    gargantua.mass_ = 1000.0;
+    gargantua.position_ = _SunDir.xyz;  //float3(0.0, 0.0, -16.0 );
+    gargantua.radius_ = _Radius; //.9;
+    gargantua.ring_radius_inner_ = gargantua.radius_ + _Inner; //1.8;
+    gargantua.ring_radius_outer_ = _Outer;  //10.0;
+    gargantua.ring_thickness_ = _Thickness;  //0.15;
+    gargantua.mass_ = _Mass;   //1000.0;
 }
 
 void initCamera( in float3 pos, in float3 target, in float3 upDir, in float fovV ) {
@@ -151,7 +161,7 @@ float noise( in float3 x ) {
     float3 f = frac(x);
     f = f*f*(3.0-2.0*f);
     float2 uv = ( p.xy + float2(37.0,17.0)*p.z ) + f.xy;
-    float2 rg = tex2D( _MainTex, (uv+ 0.5)/256.0 ).yx;              //tex2DLod( _MainTex, (uv+ 0.5)/256.0, 0.0 ).yx;
+    float2 rg = tex2Dlod( _MainTex, float4((uv+ 0.5)/256.0,0, 0.0) ).yx;  //tex2D( _MainTex, (uv+ 0.5)/256.0 ).yx;              //tex2DLod( _MainTex, (uv+ 0.5)/256.0, 0.0 ).yx;
     return -1.0+2.0*lerp( rg.x, rg.y, f.z );
 }
 
@@ -296,19 +306,19 @@ float4 Radiance( in Ray ray )
             {
                 float2 fragCoord = v.vertex;
 
-                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                float3 viewDirection = normalize(v.uv.xyz*001- _WorldSpaceCameraPos.xyz  );
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection; //*float3(4,1,4);                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz*1.000;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*1.000+_XYZPos;                                             // ray origin
 
     seed = _Time.y; ///*_Time.y +*/ // iResolution.y * fragCoord.x / iResolution.x + fragCoord.y / iResolution.y;
     
     initScene();
     
-    float2 screen_uv = v.uv; //(iMouse.x!=0.0 && iMouse.y!=0.0)?iMouse.xy/iResolution.xy:float2( 0.8, 0.4 );
+//    float2 screen_uv = v.uv; //(iMouse.x!=0.0 && iMouse.y!=0.0)?iMouse.xy/iResolution.xy:float2( 0.8, 0.4 );
     
-    float mouseSensitivity = 0.4;
+//    float mouseSensitivity = 0.4;
     float3 cameraDir = rd; //sphericalToCartesian( 1.0, -((HALF_PI - (screen_uv.y)*PI)*mouseSensitivity), (-screen_uv.x*TWO_PI)*mouseSensitivity );
     
     initCamera( gargantua.position_ + cameraDir*8.0, gargantua.position_, float3(0.2, 1.0, 0.0), radians(50.0) );
@@ -316,7 +326,9 @@ float4 Radiance( in Ray ray )
     float4 color = float4( 0.0, 0.0, 0.0, 1.0 );
     for( int i=0; i<SPP; i++ ){
         float2 screenCoord = fragCoord.xy + float2( rnd(), rnd() );
-        Ray ray = genRay( screenCoord );
+        Ray ray;  // = genRay( screenCoord );
+        ray.origin = ro;
+        ray.dir = rd;
         
         color += Radiance( ray );
     }

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SkyDomeTwinSuns
-  m_Shader: {fileID: 4800000, guid: 5981faf97e9c2524dbac026567afcc61, type: 3}
+  m_Name: CityFlight
+  m_Shader: {fileID: 4800000, guid: aaed281ee40176048a83037f02812d1b, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -19,11 +19,15 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
+    - _MainTex1:
+        m_Texture: {fileID: 2800000, guid: 2c72c8cfcbeeb59498134a62eec6966d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex2:
+        m_Texture: {fileID: 2800000, guid: 834953f17ef631b4693d833a919b7732, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats: []
     m_Colors:
     - _SunDir: {r: -0.11, g: 0.07, b: 0.99, a: 0}
-    - _XYZPos: {r: 0, g: -0, b: 0, a: 0}
+    - _XYZPos: {r: 2.01, g: -51.3, b: -17.22, a: 0}

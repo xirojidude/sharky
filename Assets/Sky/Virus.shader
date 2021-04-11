@@ -6,6 +6,8 @@ Shader "Skybox/Virus"
         _MainTex ("Texture", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+        _TimeOffset ("Time", Float) = 0.0
+
     }
     SubShader
     {
@@ -24,6 +26,7 @@ Shader "Skybox/Virus"
 
             uniform sampler2D _MainTex; 
             float4 _SunDir,_XYZPos;
+            float _TimeOffset;
 
             struct appdata
             {
@@ -329,7 +332,7 @@ float3 R(float2 uv, float3 p, float3 l, float3 up, float z) {
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*.01+ _XYZPos;                                             // ray origin
 
 //   float2 uv = (fragCoord-.5*iResolution.xy)/iResolution.y;
 //    float2 m = (iMouse.xy-.5*iResolution.xy)/iResolution.xy;

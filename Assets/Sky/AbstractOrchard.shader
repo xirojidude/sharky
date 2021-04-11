@@ -3,7 +3,9 @@ Shader "Skybox/Abstract Orchard"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex1 ("tex2D", 2D) = "white" {}
+        _MainTex2 ("tex2D", 2D) = "white" {}
+        _MainTex3 ("tex2D", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
     }
@@ -22,7 +24,7 @@ Shader "Skybox/Abstract Orchard"
 
             #include "UnityCG.cginc"
 
-            uniform sampler2D _MainTex; 
+            uniform sampler2D _MainTex1,_MainTex2,_MainTex3; 
             float4 _SunDir,_XYZPos;
 
             struct appdata
@@ -52,41 +54,18 @@ Shader "Skybox/Abstract Orchard"
             }
 
 
-
-         fixed4 frag (v2f v) : SV_Target
-            {
-                float2 fragCoord = v.vertex;
-                float2 screenUV = v.screenPos.xy / v.screenPos.w;
-
-                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
-                fixed4 fragColor = tex2D(_MainTex, v.uv);
-                
-                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
-
-
-
-                return fragColor;
-            }
-
-            ENDCG
-        }
-    }
-}
-
-
 // Abstract Orchard
 // by Dave Hoskins. October 2019
 // License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 int spointer;
-vec3 sunLight;
-#define SUN_COLOUR vec3(1., .9, .8)
-#define FOG_COLOUR vec3(1., .7, .7)
+float3 sunLight;
+#define SUN_COLOUR float3(1., .9, .8)
+#define FOG_COLOUR float3(1., .7, .7)
 
 struct Stack
 {
-    vec3 pos;
+    float3 pos;
     float alpha;
     float dist;
     int mat;
@@ -94,33 +73,76 @@ struct Stack
 };
 
 #define STACK_SIZE 8
-Stack stack[STACK_SIZE];
+Stack stack[8];
+Stack stack0;
+Stack stack1;
+Stack stack2;
+Stack stack3;
+Stack stack4;
+Stack stack5;
+Stack stack6;
+Stack stack7;
 
+float3 stack0pos;
+float3 stack1pos;
+float3 stack2pos;
+float3 stack3pos;
+float3 stack4pos;
+float3 stack5pos;
+float3 stack6pos;
+float3 stack7pos;
+
+float stack0alpha;
+float stack1alpha;
+float stack2alpha;
+float stack3alpha;
+float stack4alpha;
+float stack5alpha;
+float stack6alpha;
+float stack7alpha;
+
+float stack0dist;
+float stack1dist;
+float stack2dist;
+float stack3dist;
+float stack4dist;
+float stack5dist;
+float stack6dist;
+float stack7dist;
+
+int stack0mat;
+int stack1mat;
+int stack2mat;
+int stack3mat;
+int stack4mat;
+int stack5mat;
+int stack6mat;
+int stack7mat;
 //==============================================================================
 //--------------------------------------------------------------------------
-float getGroundHeight(vec2 p)
+float getGroundHeight(float2 p)
 {
     float y =(sin(p.y*.23)+cos(p.x*.18))*.8;
     return y;
 }
 //--------------------------------------------------------------------------
-mat3 getCamMat( in vec3 ro, in vec3 ta, float cr )
+float3x3 getCamMat( in float3 ro, in float3 ta, float cr )
 {
-    vec3 cw = normalize(ta-ro);
-    vec3 cp = vec3(sin(cr), cos(cr),0.0);
-    vec3 cu = normalize( cross(cw,cp) );
-    vec3 cv = normalize( cross(cu,cw) );
-    return mat3( cu, cv, cw );
+    float3 cw = normalize(ta-ro);
+    float3 cp = float3(sin(cr), cos(cr),0.0);
+    float3 cu = normalize( cross(cw,cp) );
+    float3 cv = normalize( cross(cu,cw) );
+    return float3x3( cu, cv, cw );
 }
 
 //--------------------------------------------------------------------------
 // Loop the camposition around a uneven sine and cosine, and default the time 0
 // to be steep at a loop point by adding 140...
-vec3 getCamPos(float t)
+float3 getCamPos(float t)
 {
     //t = sin(t*.01)*200.;
     t+=140.;
-    vec3 p = vec3(3.0+50.0*sin(t*.03),
+    float3 p = float3(3.0+50.0*sin(t*.03),
                   1.5,
                   4.0 + 50.0*cos(t*.044));
     p.y-=getGroundHeight(p.xz);
@@ -131,112 +153,112 @@ vec3 getCamPos(float t)
 //  1 out, 1 in...
 float hash11(float p)
 {
-    p = fract(p * .1031);
+    p = frac(p * .1031);
     p *= p + 33.33;
     p *= p + p;
-    return fract(p);
+    return frac(p);
 }
 //----------------------------------------------------------------------------------------
 //  1 out, 2 in...
-float hash12(vec2 p)
+float hash12(float2 p)
 {
-    vec3 p3  = fract(vec3(p.xyx) * .1031);
+    float3 p3  = frac(float3(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+    return frac((p3.x + p3.y) * p3.z);
 }
 
 //  1 out, 3 in...
-vec3 hash31(float p)
+float3 hash31(float p)
 {
-   vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+   float3 p3 = frac(float3(p,p,p) * float3(.1031, .1030, .0973));
    p3 += dot(p3, p3.yzx+33.33);
-   return fract((p3.xxy+p3.yzz)*p3.zyx); 
+   return frac((p3.xxy+p3.yzz)*p3.zyx); 
 }
 
 //  3 out, 3 in...
-vec3 hash33(vec3 p3)
+float3 hash33(float3 p3)
 {
-    p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 = frac(p3 * float3(.1031, .1030, .0973));
     p3 += dot(p3, p3.yxz+33.33);
-    return fract((p3.xxy + p3.yxx)*p3.zyx);
+    return frac((p3.xxy + p3.yxx)*p3.zyx);
 }
 
 
 //------------------------------------------------------------------------------
-float randomTint(vec3 pos)
+float randomTint(float3 pos)
 {
-    float r = texture(iChannel1, pos.xz*.0027).x;
+    float r = tex2D(_MainTex1, pos.xz*.0027).x;
     return r+.5;
 }
 
 //----------------------------------------------------------------------------------------
-vec3 texCube(sampler2D sam, in vec3 p, in vec3 n )
+float3 texCube(sampler2D sam, in float3 p, in float3 n )
 {
-    vec3 x = texture(sam, p.yz).xyz;
-    vec3 y = texture(sam, p.zx).xyz;
-    vec3 z = texture(sam, p.xy).xyz;
+    float3 x = tex2D(sam, p.yz).xyz;
+    float3 y = tex2D(sam, p.zx).xyz;
+    float3 z = tex2D(sam, p.xy).xyz;
     return (x*abs(n.x) + y*abs(n.y) + z*abs(n.z))/(abs(n.x)+abs(n.y)+abs(n.z));
 }
 
 //------------------------------------------------------------------------------
-vec4 grassTexture(vec3 pos, vec3 nor)
+float4 grasstex2D(float3 pos, float3 nor)
 {
     
-    float g = texture(iChannel1, pos.xz*.5).x;
-    float s = texture(iChannel1, pos.xz*.015).x*.2;
+    float g = tex2D(_MainTex1, pos.xz*.5).x;
+    float s = tex2D(_MainTex1, pos.xz*.015).x*.2;
     
     
-    vec3 flower = texture(iChannel2, pos.xz*.15).xyz;
-    float rand = texture(iChannel1, pos.xz*.003).x;
+    float3 flower = tex2D(_MainTex2, pos.xz*.15).xyz;
+    float rand = tex2D(_MainTex1, pos.xz*.003).x;
     rand *= rand*rand;
     
-    flower =pow(flower,vec3(8, 15, 5)) *10. * rand;
-    vec4 mat = vec4(g*.05+s, g*.65, 0, g*.1);
+    flower =pow(flower,float3(8, 15, 5)) *10. * rand;
+    float4 mat = float4(g*.05+s, g*.65, 0, g*.1);
     mat.xyz += flower;
     
     return min(mat, 1.0);
 }
 
 //------------------------------------------------------------------------------
-vec4 barkTexture(vec3 p, vec3 nor)
+float4 barktexture(float3 p, float3 nor)
 {
-    vec2 r = floor(p.xz / 5.0) * 0.02;
+    float2 r = floor(p.xz / 5.0) * 0.02;
     
-    float br = texture(iChannel1, r).x;
-    vec3 mat = texCube(iChannel3, p, nor) * vec3(.35, .25, .25);
-    mat += texCube(iChannel3, p*1.73, nor)*smoothstep(0.0,.2, mat.y)*br * vec3(1,.9,.8);
+    float br = tex2D(_MainTex1, r).x;
+    float3 mat = texCube(_MainTex3, p, nor) * float3(.35, .25, .25);
+    mat += texCube(_MainTex3, p*1.73, nor)*smoothstep(0.0,.2, mat.y)*br * float3(1,.9,.8);
     //mat*=mat*2.5;
-    return vec4(mat, .1);
+    return float4(mat, .1);
 }
 
 //------------------------------------------------------------------------------
-vec4 leavesTexture(vec3 p, vec3 nor)
+float4 leavestex2D(float3 p, float3 nor)
 {
     
-    vec3 rand = texCube(iChannel2, p*.15,nor);
-    vec3 mat = vec3(0.4,1.2,0) *rand;
-    if (nor.y < 0.0) mat += vec3(1., 0.5,.5);
+    float3 rand = texCube(_MainTex2, p*.15,nor);
+    float3 mat = float3(0.4,1.2,0) *rand;
+    if (nor.y < 0.0) mat += float3(1., 0.5,.5);
     
-    return vec4(mat, .0);
+    return float4(mat, .0);
 }
 
 //------------------------------------------------------------------------------
-vec4 fruitTexture(vec3 p, vec3 nor, float i)
+float4 fruittex2D(float3 p, float3 nor, float i)
 {
     
     
-    float rand = texCube(iChannel2, p*.1 ,nor).x;
-    float t = dot(nor, normalize(vec3(.8, .1, .1)));
-    vec3 mat = vec3(1.,abs(t)*rand,0);
-    mat = mix(vec3(0,1,0), mat, i/10.);
+    float rand = texCube(_MainTex2, p*.1 ,nor).x;
+    float t = dot(nor, normalize(float3(.8, .1, .1)));
+    float3 mat = float3(1.,abs(t)*rand,0);
+    mat = lerp(float3(0,1,0), mat, i/10.);
 
-    return vec4(mat, .5);
+    return float4(mat, .5);
 }
 
 
 
 //------------------------------------------------------------------------------
-float distanceRayPoint(vec3 ro, vec3 rd, vec3 p, out float h)
+float distanceRayPoint(float3 ro, float3 rd, float3 p, out float h)
 {
     h = dot(p-ro,rd);
     return length(p-ro-rd*h);
@@ -251,42 +273,42 @@ const float STEP_SIZE = 2.;
 // This seed code is the starfield stuff from iapafoto
 // I've just removed the alpha part...
 // https://www.shadertoy.com/view/Xl2BRR
-mat2 rotMat2D(float a)
+float2x2 rotfloat2x2D(float a)
 {
     float si = sin(a);
     float co = cos(a);
-    return mat2(si, co, -co, si);
+    return float2x2(si, co, -co, si);
 }
 
-vec3 floatingSeeds(in vec3 ro, in vec3 rd, in float tmax)
+float3 floatingSeeds(in float3 ro, in float3 rd, in float tmax)
 { 
  
     float d =  0.;
     ro /= STEP_SIZE;
-    vec3 pos = floor(ro),
+    float3 pos = floor(ro),
          ri = 1./rd,
          rs = sign(rd),
          dis = (pos-ro + .5 + rs*0.5) * ri;
     
     float dint;
-    vec3 offset, id;
-    vec3 col = vec3(0);
-    vec3 sum = vec3(0);
+    float3 offset, id;
+    float3 col = float3(0,0,0);
+    float3 sum = float3(0,0,0);
     //float size = .04;
     
     for( int i=0; i< SEEDS; i++ )
     {
         id = hash33(pos);
 
-        offset = clamp(id+.2*cos(id*iTime),SIZE, 1.-SIZE);
+        offset = clamp(id+.2*cos(id*_Time.y),SIZE, 1.-SIZE);
         d = distanceRayPoint(ro, rd, pos+offset, dint);
         
         if (dint > 0. && dint * STEP_SIZE < tmax)
         {
-            col = vec3(.4)*smoothstep(SIZE, 0.0,d);
+            col = float3(.4,.4,.4)*smoothstep(SIZE, 0.0,d);
             sum += col;
         }
-        vec3 mm = step(dis.xyz, dis.yxy) * step(dis.xyz, dis.zzx);
+        float3 mm = step(dis.xyz, dis.yxy) * step(dis.xyz, dis.zzx);
         dis += mm * rs * ri;
         pos += mm * rs;
     }
@@ -295,62 +317,63 @@ vec3 floatingSeeds(in vec3 ro, in vec3 rd, in float tmax)
 }
 
 //--------------------------------------------------------------------------
-float findClouds2D(in vec2 p)
+float findClouds2D(in float2 p)
 {
     float a = 1.5, r = 0.0;
     p*= .000001;
     for (int i = 0; i < 5; i++)
     {
-        r+= texture(iChannel1,p*=2.2).x*a;
+        r+= tex2D(_MainTex1,p*=2.2).x*a;
         a*=.5;
     }
     return max(r-1.5, 0.0);
 }
 //------------------------------------------------------------------------------
 // Use the difference between two cloud densities to light clouds in the direction of the sun.
-vec4 getClouds(vec3 pos, vec3 dir)
+float4 getClouds(float3 pos, float3 dir)
 {
-    if (dir.y < 0.0) return vec4(0.0);
+    if (dir.y < 0.0) return float4(0.0,0,0,0);
     float d = (4000. / dir.y);
-    vec2 p = pos.xz+dir.xz*d;
+    float2 p = pos.xz+dir.xz*d;
     float r = findClouds2D(p);
     float t = findClouds2D(p+normalize(sunLight.xz)*30.);    
     t = sqrt(max((r-t)*20., .2))*2.;
-    vec3 col = vec3(t) * SUN_COLOUR;
+    float3 col = float3(t,t,t) * SUN_COLOUR;
     // returns colour and alpha...
-    return vec4(col, r);
+    return float4(col, r);
 } 
 
+float mod(float a, float b) {return a%b;}
 
 //------------------------------------------------------------------------------
 // Thanks to Fizzer for the space-folded tree idea...
 /// https://www.shadertoy.com/view/4tVcWR
-vec2 map(vec3 p, float t)
+float2 map(float3 p, float t)
 {
  
     float matID, f;
     p.y += getGroundHeight(p.xz);
     float num = (floor(p.z/5.))*5.+(floor(p.x/5.0))*19.;
     p.xz = mod(p.xz, 5.0)-2.5;
-    //p.xz *= rotMat2D(p.y*num/300.); // ... No, just too expensive. :)
+    //p.xz *= rotfloat2x2D(p.y*num/300.); // ... No, just too expensive. :)
     
     float d = p.y;
     matID = 0.0;
 
     float s=1.,ss=1.6;
     
-    // Tangent vectors for the branch local coordinate system.
-    vec3 w=normalize(vec3(-1.5+abs(hash11(num*4.)*.8),1,-1.));
-    vec3 u=normalize(cross(w,vec3(0,1.,0.)));
+    // Tangent Vectors for the branch local coordinate system.
+    float3 w=normalize(float3(-1.5+abs(hash11(num*4.)*.8),1,-1.));
+    float3 u=normalize(cross(w,float3(0,1.,0.)));
 
     float scale=3.5;
     p/=scale;
-    vec3 q = p;
+    float3 q = p;
     // Make the iterations lessen over distance for speed up...
     int it = 10-int(min(t*.03, 9.0));
 
     float h  = hash11(num*7.)*.3+.3;
-    vec3 uwc = normalize(cross(u,w));
+    float3 uwc = normalize(cross(u,w));
     int dontFold = int(hash11(num*23.0) * 9.0)+3;
     
     float thick = .2/(h-.24);
@@ -368,7 +391,7 @@ vec2 map(vec3 p, float t)
             p.xz = abs(p.xz);
 
         p.y-=h;
-        p*=mat3(u,uwc,w);
+        p=mul(p,float3x3(u,uwc,w));
         p*=ss;
         s*=ss;
     }
@@ -385,7 +408,7 @@ vec2 map(vec3 p, float t)
     h *= 1.1;
     for (int i = 0; i < it; i++)
     {
-        p = (normalize(hash31(num+float(i+19))-.5))*vec3(h, 0.1, h);
+        p = (normalize(hash31(num+float(i+19))-.5))*float3(h, 0.1, h);
         p+=q;
         float ds =length(p)-.015;
         if (ds <= d)
@@ -395,7 +418,7 @@ vec2 map(vec3 p, float t)
         }
     }
 
-    return vec2(d, matID);
+    return float2(d, matID);
 }
 
 //------------------------------------------------------------------------------
@@ -403,11 +426,11 @@ float sphereRadius(float t)
 {
     t = abs(t-.0);
     t *= 0.003;
-    return clamp(t, 1.0/iResolution.y, 3000.0/iResolution.y);
+    return clamp(t, 1.0/450, 3000.0/450);  //return clamp(t, 1.0/iResolution.y, 3000.0/iResolution.y);
 }
 
 //------------------------------------------------------------------------------
-float shadow( in vec3 ro, in vec3 rd, float dis)
+float shadow( in float3 ro, in float3 rd, float dis)
 {
     float res = 1.0;
     float t = hash11(dis)*.5+.2;
@@ -415,7 +438,7 @@ float shadow( in vec3 ro, in vec3 rd, float dis)
     
     for (int i = 0; i < 10; i++)
     {
-        vec3 p =  ro + rd*t;
+        float3 p =  ro + rd*t;
 
         h = map(p,dis).x;
         res = min(10.*h / t*t, res);
@@ -429,14 +452,15 @@ float shadow( in vec3 ro, in vec3 rd, float dis)
 // Taken almost straight from Inigo's shaders, thanks man!
 // But I've changed a few things like the for-loop is now a float,
 // which removes the need for the extra multiply and divide in GL2
-float calcOcc( in vec3 pos, in vec3 nor, float d )
+float calcOcc( in float3 pos, in float3 nor, float d )
 {
     float occ = 0.0;
     float sca = 1.0;
+
     for(float h= 0.07; h < .25; h+= .07)
     {
-        vec3 opos = pos + h*nor;
-        float d = map( opos, d ).x;
+        float3 opos = pos + h*nor;
+        d = map( opos, d ).x;
         occ += (h-d)*sca;
         sca *= 0.95;
     }
@@ -444,29 +468,73 @@ float calcOcc( in vec3 pos, in vec3 nor, float d )
 }
 
 //-------------------------------------------------------------------------------------------
-float marchScene(in vec3 rO, in vec3 rD, vec2 co)
+float marchScene(in float3 rO, in float3 rD, float2 co)
 {
     float t = hash12(co)*.5;
-    vec4 normal = vec4(0.0);
-    vec3 p;
+    float4 normal = float4(0.0,0,0,0);
+    float3 p;
     float alphaAcc = 0.0;
 
     spointer = 0;
-    for( int j=min(0,iFrame); j < 140; j++ )
+    for( int j=0; j < 140; j++ )        //for( int j=0; j < 140; j++ )
     {
         // Check if it's full or too far...
         if (spointer == STACK_SIZE || alphaAcc >= 1.) break;
         p = rO + t*rD;
         float sphereR = sphereRadius(t);
-        vec2 h = map(p, t);
+        float2 h = map(p, t);
         if( h.x <= sphereR)
         {
             //h = max(h,0.0);
             float alpha = (1.0 - alphaAcc) * min(((sphereR-h.x+.01) / sphereR), 1.0);
-            stack[spointer].pos = p;
-            stack[spointer].alpha = alpha;
-            stack[spointer].dist = t;
-            stack[spointer].mat = int(h.y);
+            if (spointer == 0) {
+                stack0pos = p;
+                stack0alpha = alpha;
+                stack0dist = t;
+                stack0mat = int(h.y);
+            }
+            if (spointer == 1) {
+                stack1pos = p;
+                stack1alpha = alpha;
+                stack1dist = t;
+                stack1mat = int(h.y);
+            }
+            if (spointer == 2) {
+                stack2pos = p;
+                stack2alpha = alpha;
+                stack2dist = t;
+                stack2mat = int(h.y);
+            }
+            if (spointer == 3) {
+                stack3pos = p;
+                stack3alpha = alpha;
+                stack3dist = t;
+                stack3mat = int(h.y);
+            }
+            if (spointer == 4) {
+                stack4pos = p;
+                stack4alpha = alpha;
+                stack4dist = t;
+                stack4mat = int(h.y);
+            }
+            if (spointer == 5) {
+                stack5pos = p;
+                stack5alpha = alpha;
+                stack5dist = t;
+                stack5mat = int(h.y);
+            }
+            if (spointer == 6) {
+                stack6pos = p;
+                stack6alpha = alpha;
+                stack6dist = t;
+                stack6mat = int(h.y);
+            }
+            if (spointer == 7) {
+                stack7pos = p;
+                stack7alpha = alpha;
+                stack7dist = t;
+                stack7mat = int(h.y);
+            }
             alphaAcc += alpha;
             spointer++;
         }
@@ -476,7 +544,7 @@ float marchScene(in vec3 rO, in vec3 rD, vec2 co)
 }   
 
 //-------------------------------------------------------------------------------------------
-vec3 lighting(in int id, in vec4 mat, in vec3 pos, in vec3 normal, in vec3 eyeDir, in float d)
+float3 lighting(in int id, in float4 mat, in float3 pos, in float3 normal, in float3 eyeDir, in float d)
 {
 
     // Shadow and local occlusion...
@@ -484,7 +552,7 @@ vec3 lighting(in int id, in vec4 mat, in vec3 pos, in vec3 normal, in vec3 eyeDi
     float occ = calcOcc(pos, normal, d);
     
     // Light surface with 'sun'...
-    vec3 col = mat.xyz * SUN_COLOUR*(max(dot(sunLight,normal), 0.0))*sh;
+    float3 col = mat.xyz * SUN_COLOUR*(max(dot(sunLight,normal), 0.0))*sh;
     if (id == 2 && normal.y < -0.5)
     {
         col.y += .15;
@@ -495,7 +563,7 @@ vec3 lighting(in int id, in vec4 mat, in vec3 pos, in vec3 normal, in vec3 eyeDi
     
     float fre = clamp(1.0+dot(normal,eyeDir),0.0,1.0);
     
-    float bac = clamp(dot( normal, normalize(vec3(-sunLight.x,0.0,-sunLight.z))), 0.0, 1.0 );
+    float bac = clamp(dot( normal, normalize(float3(-sunLight.x,0.0,-sunLight.z))), 0.0, 1.0 );
     normal = reflect(eyeDir, normal); // Specular...
     col += pow(max(dot(sunLight, normal), 0.0), 16.0)  * SUN_COLOUR * sh * mat.w * occ * fre;
     col += bac*mat.xyz* .3 * occ;
@@ -506,97 +574,160 @@ vec3 lighting(in int id, in vec4 mat, in vec3 pos, in vec3 normal, in vec3 eyeDi
 }
 
 //------------------------------------------------------------------------------
-vec3 getNormal2(vec3 p, float e)
+float3 getNormal2(float3 p, float e)
 {
-    return normalize( vec3( map(p+vec3(e,0.0,0.0), 0.).x - map(p-vec3(e,0.0,0.0), 0.).x,
-                            map(p+vec3(0.0,e,0.0), 0.).x - map(p-vec3(0.0,e,0.0), 0.).x,
-                            map(p+vec3(0.0,0.0,e), 0.).x - map(p-vec3(0.0,0.0,e), 0.).x));
+    return normalize( float3( map(p+float3(e,0.0,0.0), 0.).x - map(p-float3(e,0.0,0.0), 0.).x,
+                            map(p+float3(0.0,e,0.0), 0.).x - map(p-float3(0.0,e,0.0), 0.).x,
+                            map(p+float3(0.0,0.0,e), 0.).x - map(p-float3(0.0,0.0,e), 0.).x));
 }
 
-vec3 getNormal(vec3 pos, float ds)
+float3 getNormal(float3 pos, float ds)
 {
 
     float c = map(pos, 0.).x;
     // Use offset samples to compute gradient / normal
-    vec2 eps_zero = vec2(ds, 0.0);
-    return normalize(vec3(map(pos + eps_zero.xyy, 0.0).x, map(pos + eps_zero.yxy, 0.0).x,
+    float2 eps_zero = float2(ds, 0.0);
+    return normalize(float3(map(pos + eps_zero.xyy, 0.0).x, map(pos + eps_zero.yxy, 0.0).x,
                           map(pos + eps_zero.yyx, 0.0).x) - c);
 }
 
 
 //------------------------------------------------------------------------------
-vec3 getSky(vec3 dir)
+float3 getSky(float3 dir)
 {
-    vec3 col = mix(vec3(FOG_COLOUR), vec3(.0, 0.2,0.4),(abs(dir.y)));
+    float3 col = lerp(float3(FOG_COLOUR), float3(.0, 0.2,0.4),(abs(dir.y)));
     return col;
 }
 
 
-//==============================================================================
-void mainImage( out vec4 fragColour, in vec2 fragCoord )
-{
-    vec2 mouseXY = iMouse.xy / iResolution.xy;
-    vec2 uv = (-iResolution.xy + 2.0 * fragCoord ) / iResolution.y;
-    sunLight = normalize(vec3(-.8,1.8,-1.5));
+
+         fixed4 frag (v2f v) : SV_Target
+            {
+                float2 fragCoord = v.vertex;
+                float2 screenUV = v.screenPos.xy / v.screenPos.w;
+
+                float3 viewDirection = normalize(v.uv.xyz- _WorldSpaceCameraPos.xyz  );
+                fixed4 fragColor = tex2D(_MainTex1, v.uv);
+                
+                float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
+                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+
+//    float2 mouseXY = iMouse.xy / iResolution.xy;
+//    float2 uv = (-iResolution.xy + 2.0 * fragCoord ) / iResolution.y;
+    sunLight = normalize(float3(_SunDir.xyz));            //-.8,1.8,-1.5));
     
     // Camera stuff...
-    float time = iTime+mouseXY.x*100.0;
-    vec3 camera = getCamPos(time);
-    vec3 lookat = getCamPos(time+10.);
-    float ride = sin(iTime*.3)+.3;
-    camera.y += ride;
-    lookat.y += ride;
+    float time = _Time.y; //+mouseXY.x*100.0;
+    float3 camera = ro; //getCamPos(time);
+//    float3 lookat = getCamPos(time+10.);
+//    float ride = sin(_Time.y*.3)+.3;
+//    camera.y += ride;
+//    lookat.y += ride;
     
-    mat3 camMat = getCamMat(camera, lookat, 0.0);
-    vec3 seedDir = normalize( vec3(uv, cos((length(uv*.4)))));
-    vec3 rd = camMat * seedDir;
+//    float3x3 camMat = getCamMat(camera, lookat, 0.0);
+//    float3 seedDir = normalize( float3(uv, cos((length(uv*.4)))));
+//    float3 rd = camMat * seedDir;
 
-    vec3 col = vec3(0);
+    float3 col = float3(0,0,0);
 
-    vec3 sky  = getSky(rd);
+    float3 sky  = getSky(rd);
   
 
     // Build the stack returning the final alpha value...
     float alpha = marchScene(camera, rd, fragCoord);
-    vec4 mat;
+    float4 mat;
     // Render the stack...
     if (alpha > .0)
     {
+        [unroll(8)]
         for (int i = 0; i < spointer; i++)
         {
-            vec3  pos = stack[i].pos; 
-            float d = stack[i].dist;
-            
-            vec3 nor =  getNormal(pos, sphereRadius(d));
-            int matID = stack[i].mat;
-            if (matID == 0) mat =  grassTexture(pos, nor);
+            float3 pos = float3(0,0,0);
+            float d=0;
+            int matID;
+            float alpha;
+
+            //float3  pos = stack[i].pos; 
+            //float d = stack[i].dist;
+            //int matID = stack[i].mat;
+            float3 nor =  getNormal(pos, sphereRadius(d));
+            if (i==0) {
+                pos = stack0pos; 
+                d = stack0dist;
+                matID = stack0mat;
+                alpha = stack0alpha;
+            }
+            if (i==1) {
+                pos = stack1pos; 
+                d = stack1dist;
+                matID = stack1mat;
+                alpha = stack1alpha;
+            }
+            if (i==2) {
+                pos = stack2pos; 
+                d = stack2dist;
+                matID = stack2mat;
+                alpha = stack2alpha;
+            }
+            if (i==3) {
+                pos = stack3pos; 
+                d = stack3dist;
+                matID = stack3mat;
+                alpha = stack3alpha;
+            }
+            if (i==4) {
+                pos = stack4pos; 
+                d = stack4dist;
+                matID = stack4mat;
+                alpha = stack4alpha;
+            }
+            if (i==5) {
+                pos = stack5pos; 
+                d = stack5dist;
+                matID = stack5mat;
+                alpha = stack5alpha;
+            }
+            if (i==6) {
+                pos = stack6pos; 
+                d = stack6dist;
+                matID = stack6mat;
+                alpha = stack6alpha;
+            }
+            if (i==7) {
+                pos = stack7pos; 
+                d = stack7dist;
+                matID = stack7mat;
+                alpha = stack7alpha;
+            }
+
+            if (matID == 0) mat =  grasstex2D(pos, nor);
             else
-                if (matID == 1) mat = barkTexture(pos, nor);
+                if (matID == 1) mat = barktexture(pos, nor);
             else
             if (matID == 2)
             {
-                mat = leavesTexture(pos, nor);
+                mat = leavestex2D(pos, nor);
                 
                 
             }
             else
-                mat = fruitTexture(pos, nor, float(matID - 3));
+                mat = fruittex2D(pos, nor, float(matID - 3));
 
             mat *= randomTint(pos);
  
-            vec3  temp = lighting(matID,mat, pos, nor, rd, d);
-            if (matID == 3) temp=temp*.4+vec3(.15, .01,0);
+            float3  temp = lighting(matID,mat, pos, nor, rd, d);
+            if (matID == 3) temp=temp*.4+float3(.15, .01,0);
             
-            temp = mix(sky, temp , exp(-d*.01));
-            col += temp * stack[i].alpha;
+            temp = lerp(sky, temp , exp(-d*.01));
+            col += temp *  alpha;    //stack[i].alpha;
         }
     }
-    vec4 cc = getClouds(camera, rd);
+    float4 cc = getClouds(camera, rd);
     sky+= pow(max(dot(sunLight, rd), 0.0), 300.0)*SUN_COLOUR*2.;
-    sky = mix(sky, cc.xyz, cc.w);
+    sky = lerp(sky, cc.xyz, cc.w);
     col += sky *  (1.0-alpha);
     
-    float d = stack[0].dist;
+    float d = stack0dist;
     col+= floatingSeeds(camera, rd, d);
     
    
@@ -604,19 +735,27 @@ void mainImage( out vec4 fragColour, in vec2 fragCoord )
     col+=pow(max(dot(sunLight, rd), 0.0), 6.0)*SUN_COLOUR*.2;
     
     // Clamp and contrast...
-    col = col * vec3(1., .9,.9);
+    col = col * float3(1., .9,.9);
     col = clamp(col,0.,1.);
     col = col*col*(3.0-2.0*col);
 
     
     // The usual vignette...which manages to add more vibrancy...
-    vec2 q = fragCoord / iResolution.xy;
-    col *= pow(90.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.5);
+//    float2 q = fragCoord / iResolution.xy;
+//    col *= pow(90.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.5);
     // A nice fade in start...
     
     
     col *= smoothstep(0.0, 5.0, time);
-    fragColour = vec4(sqrt(col), 1.0);
-    
+    fragColor = float4(sqrt(col), 1.0);
+
+
+                return fragColor;
+            }
+
+            ENDCG
+        }
+    }
 }
+
 

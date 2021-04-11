@@ -8,6 +8,7 @@
         _SkyColor2 ("SkyColor2", Color) = (0.75,0.9,1.,1) 
         _WaterColor1 ("WaterColor1", Color) = (0.2,0.25,0.5,1) 
         _WaterColor2 ("WaterColor2", Color) = (0.1,0.05,0.2,1) 
+        _TimeOffset ("Time", Float) = 0.0
 
    
    }
@@ -34,6 +35,7 @@
             uniform float4 _MainTex_ST;
             uniform fixed _StereoEnabled;
             float4 _SkyColor1,_SkyColor2,_WaterColor1,_WaterColor2;
+            float _TimeOffset;
 
 
             float2x2 rotate(in float a){ float c = cos(a), s = sin(a);return float2x2(c,s,-s,c);}

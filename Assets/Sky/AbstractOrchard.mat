@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SkyDomeTwinSuns
-  m_Shader: {fileID: 4800000, guid: 5981faf97e9c2524dbac026567afcc61, type: 3}
+  m_Name: AbstractOrchard
+  m_Shader: {fileID: 4800000, guid: cd06567e3383e5b43ae5169638dc22b8, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -19,11 +19,19 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
+    - _MainTex1:
+        m_Texture: {fileID: 2800000, guid: 5cf543b215b04ba448e31a752562fb2c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex2:
+        m_Texture: {fileID: 2800000, guid: 51646cdfa6b467a42a8af5f103411a6c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex3:
+        m_Texture: {fileID: 2800000, guid: 5f94db9069f5fa04a991ce8358b056f1, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats: []
     m_Colors:
     - _SunDir: {r: -0.11, g: 0.07, b: 0.99, a: 0}
-    - _XYZPos: {r: 0, g: -0, b: 0, a: 0}
+    - _XYZPos: {r: 27.3, g: 4.77, b: -0.25, a: 0}

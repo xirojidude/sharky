@@ -191,7 +191,7 @@ float3 DE(float3 p)
     //p.y += height;
     float y = p.y - base-height;
     y = y*y;
-    float2 ret = Voronoi((p.xz*2.5+sin(y*4.0+p.zx*12.3)*.12+float2(sin(_Time.y*2.3+1.5*p.z),sin(_Time.y*3.6+1.5*p.x))*y*.5));
+    float2 ret = Voronoi((p.xz*2.5+sin(y*4.0+p.zx*12.3)*.12+float2(sin(_Time.y*1.3+1.5*p.z),sin(_Time.y*1.6+1.5*p.x))*y*.5));
     float f = ret.x * .6 + y * .58;
     return float3( y - f*1.4, clamp(f * 1.5, 0.0, 1.0), ret.y);
 }
@@ -435,7 +435,7 @@ float mod (float a, float b) {return a%b;}
 
         col += bri * float3(1.0, .0, .0)  * pow(glare1, 12.5)*.05;
         col += bri * float3(1.0, 1.0, 0.2) * pow(glare2, 2.0)*2.5;
-        col += bri * sunColour * pow(glare3, 2.0)*3.0;
+           col += bri * sunColour * pow(glare3, 2.0)*3.0;
     }
     col = PostEffect(col, float2(0,0)); //xy); 
     

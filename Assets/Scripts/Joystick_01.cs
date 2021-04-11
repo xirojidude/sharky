@@ -143,6 +143,8 @@ public class Joystick_01 : UdonSharpBehaviour
 
     void OnPickup()
     {
+        player = Networking.LocalPlayer;
+        Networking.SetOwner(player, gameObject);
         vspeed = 2.0f;
         Ship.Rotate( Input.GetAxis("Vertical"), 0.0f, -Input.GetAxis("Horizontal") );
         dropreset = 0;
