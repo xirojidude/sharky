@@ -193,7 +193,7 @@ float smax(float a, float b, float s){
 
 
 
-
+/*
 // Cheap and nasty 2D smooth noise function with inbuilt hash function -- based on IQ's 
 // original. Very trimmed down. In fact, I probably went a little overboard. I think it 
 // might also degrade with large time values.
@@ -214,6 +214,58 @@ float n2D(float2 p) {
         , float2(1. - p.x, p.x) 
     );
 
+}
+*/
+/*
+#define RIGID
+// Standard 2x2 hash algorithm.
+float2 hash22(float2 p) {
+//    return float2(0,0);
+    // Faster, but probaly doesn't disperse things as nicely as other methods.
+    float n = sin(dot(p, float2(113, 1)));
+    p = frac(float2(2097152, 262144)*n)*2. - 1.;
+    #ifdef RIGID
+    return p;
+    #else
+    return cos(p*6.283 + _Time.y);
+    //return abs(frac(p+ _Timw.y*.25)-.5)*2. - .5; // Snooker.
+    //return abs(cos(p*6.283 + _Time.y))*.5; // Bounce.
+    #endif
+
+}
+*/
+// Gradient noise. Ken Perlin came up with it, or a version of it. Either way, this is
+// based on IQ's implementation. It's a pretty simple process: Break space into squares, 
+// attach random 2D floattors to each of the square's four vertices, then smoothly 
+// interpolate the space between them.
+float n2D(in float2 f){
+//return 0;    
+    // Used as shorthand to write things like float3(1, 0, 1) in the short form, e.yxy. 
+   const float2 e = float2(0, 1);
+   
+    // Set up the cubic grid.
+    // Integer value - unique to each cube, and used as an ID to generate random floattors for the
+    // cube vertiies. Note that vertices shared among the cubes have the save random floattors attributed
+    // to them.
+    float2 p = floor(f);
+    f -= p; // fracional position within the cube.
+    
+
+    // Smoothing - for smooth interpolation. Use the last line see the difference.
+    //float2 w = f*f*f*(f*(f*6.-15.)+10.); // Quintic smoothing. Slower and more squarish, but derivatives are smooth too.
+    float2 w = f*f*(3. - 2.*f); // Cubic smoothing. 
+    //float2 w = f*f*f; w = ( 7. + (w - 7. ) * f ) * w; // Super smooth, but less practical.
+    //float2 w = .5 - .5*cos(f*3.14159); // Cosinusoidal smoothing.
+    //float2 w = f; // No smoothing. Gives a blocky appearance.
+    
+    // Smoothly interpolating between the four verticies of the square. Due to the shared vertices between
+    // grid squares, the result is blending of random values throughout the 2D space. By the way, the "dot" 
+    // operation makes most sense visually, but isn't the only metric possible.
+    float c = lerp(lerp(dot(hash22(p + e.xx), f - e.xx), dot(hash22(p + e.yx), f - e.yx), w.x),
+                  lerp(dot(hash22(p + e.xy), f - e.xy), dot(hash22(p + e.yy), f - e.yy), w.x), w.y);
+    
+    // Taking the final result, and converting it to the zero to one range.
+    return c*.5 + .5; // Range: [0, 1].
 }
 
 // FBM -- 4 accumulated noise layers of modulated amplitudes and frequencies.

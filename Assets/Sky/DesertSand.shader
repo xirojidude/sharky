@@ -6,6 +6,7 @@ Shader "Skybox/DesertSand"
         _MainTex ("Texture", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+        _s1 ("s1", float) = 1
     }
     SubShader
     {
@@ -24,6 +25,7 @@ Shader "Skybox/DesertSand"
 
             uniform sampler2D _MainTex; 
             float4 _SunDir,_XYZPos;
+            float _s1;
 
             struct appdata
             {
@@ -134,12 +136,28 @@ float smax(float a, float b, float s){
 }
 
 
+//#define mod(x, y) (x - y * floor(x / y))
+//float  lt(float  a, float b){ return a<b?1.0:0.0;}
+//float  lessThan(float  a, float b){ return lt(a,b); }
+//float2 lessThan(float2 a, float2 b){ return float2(lt(a.x,b.x),lt(a.y,b.y) );}
+//float3 lessThan(float3 a, float3 b){ return float3(lt(a.x,b.x),lt(a.y,b.y),lt(a.z,b.z) );}
+//float4 lessThan(float4 a, float4 b){ return float4(lt(a.x,b.x),lt(a.y,b.y),lt(a.z,b.z),lt(a.w,b.w) );}
+
+//--------------------------------------------------------------------------------------
+// Generic 1,2,3 Noise
+//--------------------------------------------------------------------------------------
+float rand1(float n)  { return frac(sin(n) * 43758.5453123); }
+float rand2(float2 n) { return frac(sin(dot(n, float2(12.9898, 4.1414))) * 43758.5453); }
+
+
+
 // Dave's hash function. More reliable with large values, but will still eventually break down.
 //
 // Hash without Sine
 // Creative Commons Attribution-ShareAlike 4.0 International Public License
 // Created by David Hoskins.
 // float2 to float2.
+/*
 float2 hash22(float2 p){
 
     float3 p3 = frac(float3(p.xyx) * float3(.1031, .1030, .0973));
@@ -155,29 +173,30 @@ float2 hash22(float2 p){
     
 
 }
+*/
 
 
-/*
 #define RIGID
 // Standard 2x2 hash algorithm.
 float2 hash22(float2 p) {
-    
+//    return float2(0,0);
     // Faster, but probaly doesn't disperse things as nicely as other methods.
     float n = sin(dot(p, float2(113, 1)));
     p = frac(float2(2097152, 262144)*n)*2. - 1.;
     #ifdef RIGID
     return p;
     #else
-    return cos(p*6.283 + iGlobalTime);
-    //return abs(frac(p+ iGlobalTime*.25)-.5)*2. - .5; // Snooker.
-    //return abs(cos(p*6.283 + iGlobalTime))*.5; // Bounce.
+    return cos(p*6.283 + _Time.y);
+    //return abs(frac(p+ _Timw.y*.25)-.5)*2. - .5; // Snooker.
+    //return abs(cos(p*6.283 + _Time.y))*.5; // Bounce.
     #endif
 
 }
-*/
+
 
 float2 nmzHash22(float2 q)
 {
+//    return float2(0,0);
     uint2 p =  uint2(asint(q)); //uint2(ivec2(q));
     p = p*uint2(3266489917U, 668265263U) + p.yx;
     p = p*(p.yx^(p >> 15U));
@@ -201,6 +220,7 @@ float Hash2d(float2 uv)
 }
 float gradN2D_new(float2 uv)  //noise2d
 {
+//return 0;
     float2 fr = frac(uv.xy);
     float2 fl = floor(uv.xy);
     float h00 = Hash2d(fl);
@@ -216,7 +236,7 @@ float gradN2D_new(float2 uv)  //noise2d
 // attach random 2D floattors to each of the square's four vertices, then smoothly 
 // interpolate the space between them.
 float gradN2D(in float2 f){
-    
+//return 0;    
     // Used as shorthand to write things like float3(1, 0, 1) in the short form, e.yxy. 
    const float2 e = float2(0, 1);
    
@@ -247,7 +267,7 @@ float gradN2D(in float2 f){
 
 // Gradient noise fBm.
 float fBm(in float2 p){
-    
+//return 0;    
     return gradN2D(p)*.57 + gradN2D(p*2.)*.28 + gradN2D(p*4.)*.15;
     
 }
@@ -258,6 +278,7 @@ float fBm(in float2 p){
 // Xyptonjtroz example. Incidently, I wrote this off the top of my head, but
 // I did have that example in mind when writing this.
 float trig3(in float3 p){
+return 0;
     p = cos(p*2. + (cos(p.yzx) + 1.)*1.57);// + _Time.y*1.
     return dot(p, float3(0.1666,0.1666,0.1666)) + 0.5;
 }
@@ -265,7 +286,7 @@ float trig3(in float3 p){
 // Basic low quality noise consisting of three layers of rotated, mutated 
 // trigonometric functions. Needs work, but it's OK for this example.
 float trigNoise3D(in float3 p){
-
+//return 0;
     // 3D transformation matrix.
     const float3x3 m3RotTheta = float3x3(0.25, -0.866, 0.433, 0.9665, 0.25, -0.2455127, -0.058, 0.433, 0.899519 )*1.5;
   
@@ -294,7 +315,7 @@ float trigNoise3D(in float3 p){
 // original. Very trimmed down. In fact, I probably went a little overboard. I think it 
 // might also degrade with large time values. I'll swap it for something more robust later.
 float n2D_orig(float2 p) {
-
+//return 0;
     float2 i = floor(p); p -= i; 
     //p *= p*p*(p*(p*6. - 15.) + 10.);
     p *= p*(3. - p*2.);  
@@ -310,7 +331,71 @@ float n2D_orig(float2 p) {
 
 }
 
+/*
+// Cheap and nasty 2D smooth noise function, based on IQ's original. Very trimmed down. In fact,
+// I probably went a little overboard. I think it might also degrade with large time values. I'll 
+// swap it for something more robust later.
+float n2D(float2 p) {
+//return 0;
+    float2 f = frac(p); 
+    p -= f; 
+    f *= f*(3. - f*2.);  
+    
+    return dot(
+             mul(
+               float2x2(
+                 frac(
+                   sin(
+                         float4(0, 41, 289, 330) + dot( p, float2(41, 289) )
+                      )*43758.5453
+                     )
+                       )
+                ,
+                  float2(1. - f.y, f.y)
+                )
+              , 
+                float2(1. - f.x, f.x) 
+              );
 
+}
+*/
+
+// Gradient noise. Ken Perlin came up with it, or a version of it. Either way, this is
+// based on IQ's implementation. It's a pretty simple process: Break space into squares, 
+// attach random 2D floattors to each of the square's four vertices, then smoothly 
+// interpolate the space between them.
+float n2D(in float2 f){
+//return 0;    
+    // Used as shorthand to write things like float3(1, 0, 1) in the short form, e.yxy. 
+   const float2 e = float2(0, 1);
+   
+    // Set up the cubic grid.
+    // Integer value - unique to each cube, and used as an ID to generate random floattors for the
+    // cube vertiies. Note that vertices shared among the cubes have the save random floattors attributed
+    // to them.
+    float2 p = floor(f);
+    f -= p; // fracional position within the cube.
+    
+
+    // Smoothing - for smooth interpolation. Use the last line see the difference.
+    //float2 w = f*f*f*(f*(f*6.-15.)+10.); // Quintic smoothing. Slower and more squarish, but derivatives are smooth too.
+    float2 w = f*f*(3. - 2.*f); // Cubic smoothing. 
+    //float2 w = f*f*f; w = ( 7. + (w - 7. ) * f ) * w; // Super smooth, but less practical.
+    //float2 w = .5 - .5*cos(f*3.14159); // Cosinusoidal smoothing.
+    //float2 w = f; // No smoothing. Gives a blocky appearance.
+    
+    // Smoothly interpolating between the four verticies of the square. Due to the shared vertices between
+    // grid squares, the result is blending of random values throughout the 2D space. By the way, the "dot" 
+    // operation makes most sense visually, but isn't the only metric possible.
+    float c = lerp(lerp(dot(hash22(p + e.xx), f - e.xx), dot(hash22(p + e.yx), f - e.yx), w.x),
+                  lerp(dot(hash22(p + e.xy), f - e.xy), dot(hash22(p + e.yy), f - e.yy), w.x), w.y);
+    
+    // Taking the final result, and converting it to the zero to one range.
+    return c*.5 + .5; // Range: [0, 1].
+}
+
+
+/*
 // Cheap and nasty 2D smooth noise function, based on IQ's original. Very trimmed down. In fact,
 // I probably went a little overboard. I think it might also degrade with large time values. I'll 
 // swap it for something more robust later.
@@ -322,13 +407,15 @@ float n2D(float2 p) {
                 float2(1. - f.y, f.y)), float2(1. - f.x, f.x) );
 
 }
+*/
+
 
 
 // Repeat gradient lines. How you produce these depends on the effect you're after. I've used a smoothed
 // triangle gradient lerped with a custom smoothed gradient to effect a little sharpness. It was produced
 // by trial and error. If you're not sure what it does, just call it individually, and you'll see.
 float grad(float x, float offs){
-    
+//return 0;    
     // Repeat triangle wave. The tau factor and ".25" factor aren't necessary, but I wanted its frequency
     // to overlap a sine function.
     x = abs(frac(x/6.283 + offs - .25) - .5)*2.;
@@ -351,7 +438,7 @@ float grad(float x, float offs){
 
 // One sand function layer... which is comprised of two lerped, rotated layers of repeat gradients lines.
 float sandL(float2 p){
-    
+//return 0;   
     // Layer one. 
     float2 q = mul(rot2(3.14159/18.),p); // Rotate the layer, but not too much.
     q.y += (gradN2D(q*18.) - .5)*.05; // Perturb the lines to make them look wavy.
@@ -395,7 +482,7 @@ float sandL(float2 p){
 float gT;
 
 float sand(float2 p){
-    
+//return 0;  
     // Rotating by 45 degrees. I thought it looked a little better this way. Not sure why.
     // I've also zoomed in by a factor of 4.
     p = float2(p.y - p.x, p.x + p.y)*.7071/4.;
@@ -448,11 +535,12 @@ float2 path(in float z){
 // https://www.shadertoy.com/view/ltcGDl
 float surfFunc( in float3 p){
     
-    p /= 2.5;
+    p /= 2.5; //2.5;
     
     // Large base ampltude with lower frequency.
     float layer1 = n2D(p.xz*.2)*2. - .5; // Linear-like discontinuity - Gives an edge look.
-    layer1 = smoothstep(0., 1.05, layer1); // Smoothing the sharp edge.
+//    layer1 = smoothstep(0., 1.05, layer1); // Smoothing the sharp edge.
+    layer1 = smoothstep(0., _s1, layer1); // Smoothing the sharp edge.
 
     // Medium amplitude with medium frequency. 
     float layer2 = n2D(p.xz*.275);
@@ -563,7 +651,8 @@ float3 tex3D(sampler2D t, in float3 p, in float3 n ){
     // Textures are stored in sRGB (I think), so you have to convert them to linear space 
     // (squaring is a rough approximation) prior to working with them... or something like that. :)
     // Once the final color value is gamma corrected, you should see correct looking colors.
-    return (tx*tx*n.x + ty*ty*n.y + tz*tz*n.z);
+ //   return (tx*tx*n.x + ty*ty*n.y + tz*tz*n.z);
+    return (tx*n.x + ty*n.y + tz*n.z);
     
 }
 
@@ -587,7 +676,7 @@ float3 doBumpMap( sampler2D tx, in float3 p, in float3 n, float bf){
 // Compact, self-contained version of IQ's 3D value noise function. I have a transparent noise
 // example that explains it, if you require it.
 float n3D_orig(in float3 p){
-    
+return 0;    
     const float3 s = float3(113, 157, 1);
     float3 ip = floor(p); p -= ip; 
     float4 h = float4(0., s.yz, s.y + s.z) + dot(ip, s);
@@ -599,7 +688,7 @@ float n3D_orig(in float3 p){
 
 // More concise, self contained version of IQ's original 3D noise function.
 float n3D(in float3 p){
-    
+return 0;    
     // Just some random figures, analogous to stride. You can change this, if you want.
     const float3 s = float3(7, 157, 113);
     

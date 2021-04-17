@@ -124,8 +124,11 @@ public class RootObject
 */
 public class SkyControls : UdonSharpBehaviour
 {
+    [Tooltip("This list of skyboxes for the world")]
     public Material[] skybox;
-    public VRCUrl[]  soundUrl;
+
+    [Tooltip("This list of videos plays to match theskybox")]
+    public VRCUrl[] playlist;
 
 //    public VRCAVProVideoPlayer videoPlayer;
 //    public VRCUrl  soundUrl;
@@ -137,10 +140,44 @@ public class SkyControls : UdonSharpBehaviour
     public Material[] SkyboxList;
     public Text ownerTextField;
     public Text masterTextField;
+    public GameObject masterCheckObj;
 
+//    [UdonSynced]
+//    VRCUrl _syncedURL;
+
+    [UdonSynced]
+    public int _syncedSky = 31;
+    public int _currentSky =31;
+    
+    public int _newSky=0;
+
+//    [UdonSynced]
+//    int _videoNumber;
+//    int _loadedVideoNumber;
+
+//    BaseVRCVideoPlayer _currentPlayer;
+
+    // [UdonSynced]
+    // bool _ownerPlaying;
+    // [UdonSynced]
+    // float _videoStartNetworkTime;
+    // [UdonSynced]
+    // bool _ownerPaused = false;
+    // bool _locallyPaused = false;
+
+    // bool _waitForSync;
+    // float _lastSyncTime;
+
+    // [UdonSynced]
+    // bool _masterOnly = true;
+    // bool _masterOnlyLocal = true;
+    // bool _needsOwnerTransition = false;
+
+    // [UdonSynced]
+    // int _nextPlaylistIndex = 0;
 
     [Tooltip("This determines whether the player will see the same sky everyone else does.")]
-    public bool globalSky = true;
+    public bool _globalSky = true;
 
 //    shaderList.items = new List<Item> 
 //                          {
@@ -173,11 +210,11 @@ public class SkyControls : UdonSharpBehaviour
     void Start()
     {
 #if !UNITY_EDITOR // Causes null ref exceptions so just exclude it from the editor
- //       masterTextField.text = Networking.GetOwner(masterCheckObj).displayName;
+        masterTextField.text = "Master: "+ Networking.GetOwner(masterCheckObj).displayName;
 #endif   
     
 #if !UNITY_EDITOR // Causes null ref exceptions so just exclude it from the editor
-        ownerTextField.text = Networking.GetOwner(gameObject).displayName;
+        ownerTextField.text = "Owner: " + Networking.GetOwner(gameObject).displayName;
 #endif
  
     }
@@ -215,30 +252,8 @@ public class SkyControls : UdonSharpBehaviour
         }
 
         */
-        // Stop video button
-        public void ShowSky()
-        {
-            Debug.Log("Show Sky");
-
-            if (!Networking.IsOwner(gameObject))
-                return;
-
-            // Apparently we can't do this in UDON
-            // var go = EventSystem.current.currentSelectedGameObject;
-            // if (go != null)
-            //     Debug.Log("Clicked on : " + go.name);
-            // else
-            //     Debug.Log("currentSelectedGameObject is null");
 
 
-            //_ownerPlaying = false;
-            //_currentPlayer.Stop();
-            //_syncedURL = VRCUrl.Empty;
-            //_locallyPaused = _ownerPaused = false;
-            //_draggingSlider = false;
-            //_videoTargetStartTime = 0f;
-
-        }
 
         // wish I could get a reference to button that was clicked so I didn't have to do this hack
         public void ShowSky0() { showSky(0); }
@@ -307,19 +322,86 @@ public class SkyControls : UdonSharpBehaviour
         public void ShowSky58() { showSky(58); }
         public void ShowSky59() { showSky(59); }
 
-        private void showSky(int id) 
+    public void NextSky() 
+    {
+        Debug.Log("******************  NextSky Triggered  ***********************");
+
+       _currentSky++;
+       if (_currentSky>=skybox.Length) _currentSky=0;
+
+       RenderSettings.skybox = skybox[_currentSky];
+    }       
+/*
+        public void NextSky()
         {
-            Debug.Log("Sky Button "+id+" Clicked");
-            RenderSettings.skybox = skybox[id];
+            Debug.Log("NextSky event triggered");
+            _currentSky++;
+            if (_currentSky >= skybox.Length) _currentSky = 0;
+            RenderSettings.skybox = skybox[_syncedSky];
+            _syncedSky = _currentSky;
+        }
+*/
+        public void PreviousSky()
+        {
+            Debug.Log("PreviousSky event triggered");
+            _currentSky--;
+            if (_currentSky <= -1) _currentSky = skybox.Length-1;
+            RenderSettings.skybox = skybox[_syncedSky];
+            _syncedSky = _currentSky;
         }
 
+        void Update() {
+            if (_newSky != _syncedSky) 
+            {
+                _newSky = _syncedSky;
+                RenderSettings.skybox = skybox[_newSky];
+            }
+            if (_currentSky != _syncedSky) 
+            {
+                _currentSky = _syncedSky;
+                RenderSettings.skybox = skybox[_syncedSky];
+            }
+        }
 
-        public void ButtonLock()
+        private void showSky(int id) 
         {
-            Debug.Log("Button Lock Clicked");
 
-            if (!Networking.IsOwner(gameObject))
-                return;
+            // If Global
+//            if (_globalSky) 
+//            {
+                // If Locked by another owner
+//                    if (!Networking.IsOwner(gameObject))
+//                        return;
+                RenderSettings.skybox = skybox[id];
+                _syncedSky = id;
+                _currentSky = id;
+
+            bool isOwner = false;
+#if !UNITY_EDITOR // Causes null ref exceptions so just exclude it from the editor
+                isOwner = Networking.IsOwner(gameObject);
+#endif
+
+                if (!isOwner)
+                {
+                    Networking.SetOwner(Networking.LocalPlayer, gameObject);
+                }
+
+            // }   
+            // else
+            // {
+            //     RenderSettings.skybox = skybox[id];
+            // } 
+
+//                if (isOwner && _needsOwnerTransition)
+//                {
+//                    //StopVideo();
+//                    _needsOwnerTransition = false;
+//                    _masterOnly = _masterOnlyLocal;
+//                }
+
+
+//            Networking.SetOwner(player, gameObject);
+
 
             //_ownerPlaying = false;
             //_currentPlayer.Stop();
@@ -328,5 +410,24 @@ public class SkyControls : UdonSharpBehaviour
             //_draggingSlider = false;
             //_videoTargetStartTime = 0f;
 
+
         }
+
+       public void ButtonLock()
+        {
+            // if (!Networking.IsMaster)
+            //     return;
+
+            // _masterOnly = _masterOnlyLocal = !_masterOnlyLocal;
+
+            // if (_masterOnly && !Networking.IsOwner(gameObject))
+            // {
+            //     _needsOwnerTransition = true;
+            //     Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            // }
+
+//            masterLockedIcon.SetActive(_masterOnly);
+//            masterUnlockedIcon.SetActive(!_masterOnly);
+        }
+
 }

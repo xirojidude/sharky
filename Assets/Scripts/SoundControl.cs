@@ -9,7 +9,7 @@ public class SoundControl : UdonSharpBehaviour
     public float beat  = 0.0f;
     public float[] fftL  = new float[256];
     public float[] fftR  = new float[256];
-    private float volume =0.0f;
+    private float volume =1.0f;
 
 //    public AudioSource m_AudioSource; 
 

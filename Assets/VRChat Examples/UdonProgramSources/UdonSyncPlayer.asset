@@ -1949,10 +1949,10 @@ MonoBehaviour:
     uid: 78cbfd2b-aab6-4f06-9e0d-99c3a508d9e7
     jsonData: '{"uid":"78cbfd2b-aab6-4f06-9e0d-99c3a508d9e7","layout":{"serializedVersion":"2","x":-440.0,"y":-900.0,"width":572.0,"height":290.0},"containedElements":["1796a413-2b55-464f-9a65-4a13b24c2f90","5a800970-374a-4c41-89e5-88b248b3798d","aa53a35f-997e-485b-a589-32d81bcc4073","4b4d1abf-4001-498f-ab23-07692a49f0f3","bdcb0f08-fe99-4fb2-a2a1-9145ea5bd1f5"],"title":"Start","layer":0,"elementTypeColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
   - type: 5
-    uid: 42b241e1-6383-4371-976a-866893a6eb9b
+    uid: 38640c53-7851-4c60-99e7-7709ca42217e
     jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":130.0,"width":260.0,"height":719.0}}'
   - type: 4
-    uid: 24c7bcd9-35ad-4bf1-8881-626ecd8ca49b
+    uid: 12ae774c-8dab-4ced-86ab-7fca89ca3eb0
     jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":20.0,"width":0.0,"height":0.0}}'
   viewTransform:
     position: {x: -1313.067, y: -45.117523}

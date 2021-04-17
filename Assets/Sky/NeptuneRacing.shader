@@ -314,11 +314,11 @@ float3 CameraPath( float t )
 
     fcoord = fragCoord;
 //    float m = 0.0;//(iMouse.x/iResolution.x)*10.0;
-    float gTime = ((_Time.y+135.0));  //*.25+m);
+//    float gTime = ((_Time.y+135.0));  //*.25+m);
 //    float2 xy = fragCoord.xy / iResolution.xy;
 //    float2 uv = (-1.0 + 2.0 * xy) * float2(iResolution.x/iResolution.y,1.0);
     
-    float hTime = mod(gTime+1.95, 2.0);
+//    float hTime = mod(gTime+1.95, 2.0);
     
     float3 cameraPos  = ro;  //CameraPath(gTime + 0.0);
 //    float3 camTarget  = CameraPath(gTime + .25);

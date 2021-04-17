@@ -59,7 +59,8 @@ float2 rotate(float2 p, float a)
 
 float fft(float band)
 {
-    return clamp(0,.8,_SoundArray[floor(band)]*100/max(.01,_Volume));
+//    return clamp(0,.8,_SoundArray[floor(band)]*1000/max(.01,_Volume));
+    return clamp(0,.8,_SoundArray[floor(band)]*10000);
     //return tex2D( _Sound, float2(band,0.0) ).x; // Should sample sound stream not image
 }
 
@@ -71,14 +72,16 @@ float noise3(in float3 x)
     float3 nf = 3.0 - (2.0 * f);
     f = f * f * (nf);
     float2 uv = (p.xy + float2(37.0, 17.0+smoothstep(0.8,0.99, fft(0.))) * p.z) + f.xy;
+//    float2 uv = (p.xy + float2(37.0, 17.0+smoothstep(0.8,0.99, fft(0.))) * p.z) + f.xy;
+
     float2 rg = tex2D(_Sound, (uv.x + 0.5) / 256.0).yx;  //, -100.0).yx;
     rg += tex2D(_Sound, (uv.x + _Time.y) / 64.0).yx/10.0;   //, -100.0).yx/10.0;
     rg += tex2D(_Sound, (uv.x + _Time.y/3.2 + 0.5) / 100.0).zx/5.0;    //, -100.0).zx/5.0;
 
 
 
-//    rg+=_SoundArray[floor(f.y*16)]*1;
-//    rg+=_SoundArray[floor(f.x*16)]*1;
+    rg+=_SoundArray[floor(f.y*16)]*1;
+    rg+=_SoundArray[floor(f.x*16)]*1;
     return lerp(rg.x, rg.y, f.z);
 }
 
@@ -112,7 +115,7 @@ float3 sky(float3 p)
     
     col = float3(pow(float3(v,v,v), float3(14.0, 9.0, 7.0))) * 0.8;
     float ss = .00001+smoothstep(0.75,0.99,fbm3a_(p));
-    col += float3(ss*8., 0.0, 0.0)*fft(floor((p.z+.5)*10))*100;
+    col += float3(ss*8., 0.0, 0.0)*   fft(    floor(  (p.z+.5)  *10)     )*1000;
     return col;
 }
 
@@ -134,9 +137,9 @@ float3 sky(float3 p)
     
     float3 dir = rd; //normalize(float3(uv, 1.1));
     
-   // dir.yz = rotate(dir.yz, sin(t/15.+smoothstep(0.99,0.999, fft(0.))));
+    dir.yz = rotate(dir.yz, sin(t/15.+smoothstep(0.99,0.999, fft(0.))));
     dir.xy = rotate(dir.xy, cos(t/13.));
-    dir.xz = rotate(dir.xz, cos(t/12.+smoothstep(0.5,0.999, fft(213.))));
+//    dir.xz = rotate(dir.xz, cos(t/12.+smoothstep(0.5,0.999, fft(213.))));
     
     float3 col = sky(dir);
 

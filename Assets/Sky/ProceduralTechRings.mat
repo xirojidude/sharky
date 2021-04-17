@@ -29,5 +29,5 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Beat: 0
-    - _Volume: 0.0101748
+    - _Volume: 0.159
     m_Colors: []

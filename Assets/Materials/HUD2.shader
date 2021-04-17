@@ -284,10 +284,10 @@ float sineOut(float t)
     
     float2 targetPosition = uv-currentPosition;
     
-    float4 tex = float4(0.,0.,0.,1);//*.5; //texture(iChannel0, q) * 0.1; 
+    float4 tex = float4(1,1,1,1);//*.5; //texture(iChannel0, q) * 0.1; 
     
     float4 final   = tex; //lerp(tex,  BLACK,  bg(uv, 1.4805, 0.500) * 0.50);      
-         final *= lerp(tex,  BLACK,  bg(uv, 1.2805, 0.702) * 0.25); 
+//         final *= lerp(tex,  BLACK,  bg(uv, 1.2805, 0.702) * 0.25); 
     
     final = lerp(final,  WHITE   , dots(uv, 20.0, 0.04) * 0.25);    
     final = lerp(final,  WHITE   , grid (uv, 10.0, 0.03) * 0.10);   
@@ -319,7 +319,7 @@ float sineOut(float t)
    
     
 
-    fragColor = final;
+    fragColor = float4(1,1,1,1)-final;
 
                 return fragColor;
             }

@@ -11,7 +11,10 @@ Shader "Skybox/RockyGorge"
         _T3 ("T3", Float) = 2.72
         _T4 ("T4", Float) = .5
         _T5 ("T5", Float) = .8
-
+        _T6 ("T6", Float) = 1
+        _T7 ("T7", Float) = 1
+        _T8 ("T8", Float) = 1
+        _T9 ("T9", Float) = 1
     }
     SubShader
     {
@@ -30,7 +33,7 @@ Shader "Skybox/RockyGorge"
 
             uniform sampler2D _MainTex; 
             float4 _SunDir,_XYZPos;
-            float _T1,_T2,_T3,_T4,_T5;
+            float _T1,_T2,_T3,_T4,_T5,_T6,_T7,_T8,_T9;
 
             struct appdata
             {
@@ -121,25 +124,77 @@ float n3D(float3 p){
     const float3 s = float3(7, 157, 113);
     float3 ip = floor(p); p -= ip; 
     float4 h = float4(0., s.yz, s.y + s.z) + dot(ip, s);
-    p = p*p*(3. - 2.*p); //p *= p*p*(p*(p * 6. - 15.) + 10.);
+    p = p*p*(3. - 2.*p); 
+    //p *= p*p*(p*(p * 6. - 15.) + 10.);
     h = lerp(frac(sin(h)*43758.5453), frac(sin(h + s.x)*43758.5453), p.x);
     h.xy = lerp(h.xz, h.yw, p.y);
     return lerp(h.x, h.y, p.z); // Range: [0, 1].
 }
 
-
+/*
 // Cheap and nasty 2D smooth noise function, based on IQ's original. Very trimmed down. In fact,
 // I probably went a little overboard. I think it might also degrade with large time values. I'll 
 // swap it for something more robust later.
 float n2D(float2 p) {
  
-    float2 i = floor(p); p -= i; p *= p*(3. - p*2.); //p *= p*p*(p*(p*6. - 15.) + 10.);    
+    float2 i = floor(p); p -= i; p *= p*(3. - p*(2.+_T9+_T8)); //p *= p*p*(p*(p*(6. - 15.) + 10.);    
     
     return dot(mul(float2x2(frac(sin(float4(0, 41, 289, 330) + dot(i, float2(41, 289)))*43758.5453)),
                float2(1. - p.y, p.y)), float2(1. - p.x, p.x));
 
 }
- 
+ */
+
+ #define RIGID
+// Standard 2x2 hash algorithm.
+float2 hash22(float2 p) {
+//    return float2(0,0);
+    // Faster, but probaly doesn't disperse things as nicely as other methods.
+    float n = sin(dot(p, float2(113, 1)));
+    p = frac(float2(2097152, 262144)*n)*2. - 1.;
+    #ifdef RIGID
+    return p;
+    #else
+    return cos(p*6.283 + _Time.y);
+    //return abs(frac(p+ _Timw.y*.25)-.5)*2. - .5; // Snooker.
+    //return abs(cos(p*6.283 + _Time.y))*.5; // Bounce.
+    #endif
+
+}
+
+ // Gradient noise. Ken Perlin came up with it, or a version of it. Either way, this is
+// based on IQ's implementation. It's a pretty simple process: Break space into squares, 
+// attach random 2D floattors to each of the square's four vertices, then smoothly 
+// interpolate the space between them.
+float n2D(in float2 f){
+//return 0;    
+    // Used as shorthand to write things like float3(1, 0, 1) in the short form, e.yxy. 
+   const float2 e = float2(0, 1);
+   
+    // Set up the cubic grid.
+    // Integer value - unique to each cube, and used as an ID to generate random floattors for the
+    // cube vertiies. Note that vertices shared among the cubes have the save random floattors attributed
+    // to them.
+    float2 p = floor(f);
+    f -= p; // fracional position within the cube.
+    
+
+    // Smoothing - for smooth interpolation. Use the last line see the difference.
+    //float2 w = f*f*f*(f*(f*6.-15.)+10.); // Quintic smoothing. Slower and more squarish, but derivatives are smooth too.
+    float2 w = f*f*(3. - 2.*f); // Cubic smoothing. 
+    //float2 w = f*f*f; w = ( 7. + (w - 7. ) * f ) * w; // Super smooth, but less practical.
+    //float2 w = .5 - .5*cos(f*3.14159); // Cosinusoidal smoothing.
+    //float2 w = f; // No smoothing. Gives a blocky appearance.
+    
+    // Smoothly interpolating between the four verticies of the square. Due to the shared vertices between
+    // grid squares, the result is blending of random values throughout the 2D space. By the way, the "dot" 
+    // operation makes most sense visually, but isn't the only metric possible.
+    float c = lerp(lerp(dot(hash22(p + e.xx), f - e.xx), dot(hash22(p + e.yx), f - e.yx), w.x),
+                  lerp(dot(hash22(p + e.xy), f - e.xy), dot(hash22(p + e.yy), f - e.yy), w.x), w.y);
+    
+    // Taking the final result, and converting it to the zero to one range.
+    return c*.5 + .5; // Range: [0, 1].
+}
 
 
 // Tri-Planar blending function. Based on an old Nvidia tutorial.
@@ -160,7 +215,7 @@ float3 tex3D( sampler2D t, in float3 p, in float3 n ){
 // The path is a 2D sinusoid that varies over time, depending upon the frequencies, and amplitudes.
 float2 path(in float z){ 
 
-    //return float2(0); // Straight path.
+    //return float2(0,0); // Straight path.
     return float2(sin(z*.075)*8., cos(z*.1)*.75); // Windy path.
     
 }
@@ -215,14 +270,14 @@ float terrain(float2 p){
         // mandatory, but it tends to give more varied - and therefore - interesting results.
         // IQ uses this combination a bit, so I'll assume he came up with the figures. I've 
         // tried other figures, but I tend to like these ones as well.      
-        p = mul(float2x2(1, -.75, .75, 1),p*_T3); //2.72
-        //p *= 3.2; // No skewing. Cheaper, but less interesting.
+        //p = mul(float2x2(1, -.75, .75, 1),p*_T3); //2.72
+        p *= 3.2+_T5; // No skewing. Cheaper, but less interesting.
         
         sum += a; // I reasoned that the sum will always be positive.
         
         // Tempering the amplitude. Note the negative sign - a less common variation - which
         // was thrown in just to lerp things up.
-        a *= -.5/1.7; 
+        a *= -.5/1.7*_T6; 
     }
     
    
@@ -268,7 +323,7 @@ float3 texBump( sampler2D tx, in float3 p, in float3 n, float bf){
     float3x3 m = float3x3( tex3D(tx, p - e.xyy, n), tex3D(tx, p - e.yxy, n), tex3D(tx, p - e.yyx, n));
     
     float3 g = mul(float3(.299, .587, .114),m); // Converting to greyscale.
-    g = (g - dot(tex3D(tx,  p , n), float3(.299, .587, .114)) )/e.x; 
+    g = (g - dot(tex3D(tx,  p , n), float3(.299, .587, .114)*_T7) )/e.x; 
     
     // Adjusting the tangent floattor so that it's perpendicular to the normal -- Thanks to
     // EvilRyu for reminding why we perform this step. It's been a while, but I vaguely recall
