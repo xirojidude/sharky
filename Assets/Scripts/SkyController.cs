@@ -68,9 +68,9 @@ public class SkyController : UdonSharpBehaviour
 20 deathstar
 */
 
-    private int[] soundMap = new int[] {0,16,2,10,9,16  ,0,17,20,3,14,20  ,2,20,8,9,15,3  ,0,2,12,17,15,3  ,3,7,0,5,11,5  ,4,15,19,19,19,19  ,19,15,18,18,16,19  ,0,14,3,19,19,16};
-    private int[] sunMap = new int[]   {1,1,1,1,1,0     ,1,1,1,1,0,1      ,1,1,2,1,1,1    ,1,0,0,0,1,1     ,1,1,1,0,0,0   ,0,1,0,0,0,0       ,0,1,0,0,0,0        ,0,0,1,0,0,1};
-    private int[] musicMap = new int[] {0,0,0,0,0,0     ,0,0,0,0,0,0      ,0,0,0,0,0,0    ,0,0,0,0,0,0     ,0,0,0,0,0,0   ,0,0,1,1,1,1       ,1,0,0,0,0,1        ,0,0,0,1,1,0};
+    private int[] soundMap = new int[] {0,16,2,10,9,16  ,0,17,20,3,14,20  ,2,20,8,9,15,3  ,0,2,12,17,15,3  ,3,7,0,5,11,5  ,4,15,19,19,19,19  ,19,15,18,18,16,19  ,0,14,3,19,19,16   ,0,14,3,19,19,16    ,0,14,3,19,19,16    ,0,14,3,19,19,16};
+    private int[] sunMap = new int[]   {1,1,1,1,1,0     ,1,1,1,1,0,1      ,1,1,2,1,1,1    ,1,0,0,0,1,1     ,1,1,1,0,0,0   ,0,1,0,0,0,0       ,0,1,0,0,0,0        ,0,0,1,0,0,1       ,0,0,1,0,0,1        ,0,0,1,0,0,1        ,0,0,1,0,0,1};
+    private int[] musicMap = new int[] {0,0,0,0,0,0     ,0,0,0,0,0,0      ,0,0,0,0,0,0    ,0,0,0,0,0,0     ,0,0,0,0,0,0   ,0,0,1,1,1,1       ,1,0,0,0,0,1        ,0,0,0,1,1,0       ,0,0,0,1,1,0        ,0,0,0,1,1,0        ,0,0,0,1,1,0};
 
 //    private string[] SkyParams  = {"Panoskybox, Mountain Clouds,  TER, 1, 0, 0, wind, 1"}; //new string[1];
 //    private string[] SkyParamsMap = new string[48];
@@ -303,6 +303,16 @@ new SkyItem {id=	85	, shader=	"Xyptonjtroz"	, label=	"Xyptonjtroz"	, cat=	"TER"	
     public void ShowSky58() { showSky(58); }
     public void ShowSky59() { showSky(59); }
 
+    public void ShowSky60() { showSky(60); }
+    public void ShowSky61() { showSky(61); }
+    public void ShowSky62() { showSky(62); }
+    public void ShowSky63() { showSky(63); }
+    public void ShowSky64() { showSky(64); }
+    public void ShowSky65() { showSky(65); }
+    public void ShowSky66() { showSky(66); }
+    public void ShowSky67() { showSky(67); }
+    public void ShowSky68() { showSky(68); }
+    public void ShowSky69() { showSky(69); }
 
     public void NextSky() 
     {
@@ -333,24 +343,24 @@ new SkyItem {id=	85	, shader=	"Xyptonjtroz"	, label=	"Xyptonjtroz"	, cat=	"TER"	
         {
             _lastSkyTime = Time.time;
             _skyQueued = false;
-            if (musicMap[_currentSky] == 1)
-            {
+            // if (musicMap[_currentSky] == 1)
+            // {
                 if (musicPlayer!=null) {
                     musicPlayer.LoadURL( playlist[ soundMap[_currentSky] ] );
                 }
-                if (videoPlayer!=null) {
-                    videoPlayer.Stop();
-                }
-            }
-            else
-            {
-                if (videoPlayer!=null) {
-                    videoPlayer.LoadURL( playlist[ soundMap[_currentSky] ] );
-                }
-                if (musicPlayer!=null) {
-                    musicPlayer.Stop();
-                }
-            }
+                // if (videoPlayer!=null) {
+                //     videoPlayer.Stop();
+                // }
+            // }
+            // else
+            // {
+            //     if (videoPlayer!=null) {
+            //         videoPlayer.LoadURL( playlist[ soundMap[_currentSky] ] );
+            //     }
+            //     if (musicPlayer!=null) {
+            //         musicPlayer.Stop();
+            //     }
+            // }
         }
         else
         {

@@ -51,7 +51,18 @@ Shader "Skybox/MountainPath"
                 return o;
             }
 
-
+#define mod(x,y) (x-y*floor(x/y)) // glsl mod
+#define iTime _Time.y
+#define iResolution _ScreenParams
+#define vec2 float2
+#define vec3 float3
+#define vec4 float4
+#define mix lerp
+#define texture tex2D
+#define fract frac
+#define mat4 float4x4
+#define mat3 float3x3
+#define textureLod(a,b,c) tex2Dlod(a,float4(b,0,c))
 /*
 
     Mountain Path
@@ -803,6 +814,7 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
                 float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
 
+
     // Screen coordinates.
 //    float2 uv = (fragCoord - iResolution.xy*.5)/iResolution.y;
     
@@ -838,7 +850,9 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
     float2 sw = path(lk.z);
 //    rd.xy = mul(rd.xy,r2(-sw.x/32.));
 //    rd.yz = mul(rd.yz,r2(-sw.y/16.));
-    
+
+    //rd coord system XYZ X=+right/-left  Z=+fwd/-back Y=+up/-down
+    rd = (screenUV.x<.002 &&  screenUV.y<.01)?float3(0,0,-1) :rd;
     
     // Retrieve the background color.
     float3 sky = getSky(ro, rd, lp);
@@ -856,7 +870,7 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
     
     // APPLYING FOG
     // Fog - based off of distance from the camera.
-    float fog = smoothstep(0., .95, t/FAR); // t/FAR; 
+    float fog = smoothstep(0., 1, t/FAR*.25); // t/FAR; 
 
     // Blend in a bit of light fog for atmospheric effect. I really wanted to put a colorful, 
     // gradient blend here, but my mind wasn't buying it, so dull, blueish grey it is. :)
@@ -888,7 +902,7 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
    
 
     // Clamping the scene color, then presenting to the screen.
-    fragColor = float4(sqrt(clamp(sceneColor, 0.0, 1.0)), 1.0);
+    fragColor = (screenUV.x<.002 &&  screenUV.y<.01)?float4(t*.1,0,0,1):float4(sqrt(clamp(sceneColor, 0.0, 1.0)), 1.0);
 
 
                 return fragColor;

@@ -11,12 +11,15 @@ public class Joystick_01 : UdonSharpBehaviour
     public Transform Ship;
     public Transform SpawnLocation;
     public Transform JoySpawnLocation;
+    public Animator animator;
+
     public float speed = 0.0f;
     public float vspeed = 0.0f;
     public int mode = 0;
     public float maxSpeed = 50.0f;
     public float acceleration = 0.005f;
     public float deceleration = 0.005f;
+    public bool isOff = true;
     private float thrust = 0.0f;
     private VRCPlayerApi player;
     private float smooth = 2.1f;
@@ -47,6 +50,12 @@ public class Joystick_01 : UdonSharpBehaviour
         joystickSpawnPosition = this.transform.localPosition;
         joystickSpawnRotation = this.transform.localRotation;
         m_Rigidbody = Ship.GetComponent<Rigidbody>();
+        animator.SetTrigger("isOff");
+        animator.ResetTrigger("isAccelerating");
+        animator.ResetTrigger("isDecelerating");
+        animator.ResetTrigger("isHighSpeed");
+        animator.ResetTrigger("isHover");
+        isOff=true;
     }
 //    void Update() {
     void FixedUpdate() {
@@ -105,11 +114,42 @@ public class Joystick_01 : UdonSharpBehaviour
         if (mode == 1)  
         {
             speed = Mathf.Min(maxSpeed,speed+acceleration+(acceleration*speed));
+            if (!isOff) {
+                if  (speed < maxSpeed*.01)
+                {
+                    animator.SetTrigger("isHover");
+                } else {
+                    animator.SetTrigger("isAccelerating");
+                    animator.ResetTrigger("isDecelerating");
+                    animator.ResetTrigger("isHover");
+                }
+            }
         }
             else 
         {
             speed = Mathf.Max(0.0f,speed-deceleration-(deceleration*speed));
+            if (!isOff) {
+                if  (speed < maxSpeed*.01)
+                {
+                    animator.SetTrigger("isHover");
+                } else {
+                    animator.SetTrigger("isDecelerating");
+                    animator.ResetTrigger("isAccelerating");
+                    animator.ResetTrigger("isHover");
+                }
+            }
         }
+
+        if  (speed > maxSpeed*.5)
+        {
+            animator.SetTrigger("isHighSpeed");
+        }
+        else
+        {
+            animator.ResetTrigger("isHighSpeed");
+        }
+
+
         Vector3 VehicleVel = m_Rigidbody.velocity;
         vspeed = Mathf.Max(0.0f,vspeed-deceleration);
         float gravity = 9.81f * Time.deltaTime;
@@ -126,7 +166,9 @@ public class Joystick_01 : UdonSharpBehaviour
             dropTime = 0;
             this.transform.localPosition = joystickSpawnPosition;
             this.transform.localRotation = joystickSpawnRotation;
+            m_Rigidbody.ResetInertiaTensor();
             m_Rigidbody.velocity = new Vector3(0.0f,0.0f,0.0f);
+            m_Rigidbody.angularVelocity = new Vector3(0.0f,0.0f,0.0f);
             dropreset=0;
         }
     }
@@ -143,11 +185,15 @@ public class Joystick_01 : UdonSharpBehaviour
 
     void OnPickup()
     {
-        player = Networking.LocalPlayer;
-        Networking.SetOwner(player, gameObject);
+        TakeOwnership();
+        //player = Networking.LocalPlayer;
+        //Networking.SetOwner(player, gameObject);
         vspeed = 2.0f;
         Ship.Rotate( Input.GetAxis("Vertical"), 0.0f, -Input.GetAxis("Horizontal") );
         dropreset = 0;
+        animator.ResetTrigger("isOff");
+        animator.SetTrigger("isHover");
+        isOff=false;
     }
 
     void OnDrop()
@@ -158,7 +204,33 @@ public class Joystick_01 : UdonSharpBehaviour
         this.speed = 0.0f;
         this.mode = 0;
         this.vspeed = 0.0f;
+        m_Rigidbody.ResetInertiaTensor();
         m_Rigidbody.velocity = new Vector3(0.0f,0.0f,0.0f);
+        m_Rigidbody.angularVelocity = new Vector3(0.0f,0.0f,0.0f);
+        isOff = true;
+        animator.SetTrigger("isOff");
+        animator.ResetTrigger("isHover");
+        animator.ResetTrigger("isAccelerating");
+        animator.ResetTrigger("isDecelerating");
+        animator.ResetTrigger("isHighSpeed");
 
     }
+
+    public void TakeOwnership()
+    {
+        Debug.Log("Take Ship Ownership ");
+        Debug.Log("From "+Networking.GetOwner(gameObject).displayName + " and assign it to "+Networking.LocalPlayer.displayName);
+   //     if (Networking.IsMaster || !_masterOnly)
+   //     {
+            if (!Networking.IsOwner(gameObject))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            }
+            if (!Networking.IsOwner(Ship.gameObject))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, Ship.gameObject);
+            }
+//     }
+    }
+
 }
