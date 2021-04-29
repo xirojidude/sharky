@@ -188,7 +188,7 @@ geometry scene(vec3 p) {
 
 float t_min = 0.001;
 float t_max = FAR;
-const int MAX_ITERATIONS = 90;
+const int MAX_ITERATIONS = 30;  //90;
 
 geometry enchancedRayMarcher(vec3 o, vec3 d, int maxI) {
     geometry mp;
@@ -263,7 +263,7 @@ geometry vanillaRayMarch(vec3 o, vec3 d, int maxI) {
 }
 
 float softShadow(vec3 ro, vec3 lp, float k) {
-    const int maxIterationsShad = 125;
+    const int maxIterationsShad = 45; ////125;
     vec3 rd = (lp - ro); // Unnormalized direction ray.
 
 

@@ -248,7 +248,7 @@ vec3 enlight(vec3 p, vec3 normal, vec3 eye, vec3 lightPos) {
     
     vec3 O = ro; //vec3(0., 0.1, 1. - timeOffset);
     float h = scene(O) * 0.65;
-    O.y -= h;
+ //   O.y -= h;
     
     vec3 D = rd; //normalize(vec3(centered_uv, -1.0)); //fov
 

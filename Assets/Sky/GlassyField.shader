@@ -292,7 +292,7 @@ vec3 envMap(vec3 rd, vec3 n){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*.01+ _XYZPos;                                             // ray origin
 
     
     
@@ -302,21 +302,21 @@ vec3 envMap(vec3 rd, vec3 n){
     // Camera Setup.
     float speed = 4.;
     vec3 o = ro; //camPath(iTime*speed); // Camera position, doubling as the ray origin.
-    vec3 lk = camPath(iTime*speed + .25);  // "Look At" position.
+//    vec3 lk = camPath(iTime*speed + .25);  // "Look At" position.
     vec3 l = o; //camPath(iTime*speed + 2.) + vec3(0, 1, 0); // Light position, somewhere near the moving camera.
 
 
     // Using the above to produce the unit ray-direction vector.
-    float FOV = 3.14159/2.; ///3. FOV - Field of view.
-    vec3 fwd = normalize(lk-o);
-    vec3 rgt = normalize(vec3(fwd.z, 0, -fwd.x )); 
-    vec3 up = cross(fwd, rgt);
+//    float FOV = 3.14159/2.; ///3. FOV - Field of view.
+//    vec3 fwd = normalize(lk-o);
+//    vec3 rgt = normalize(vec3(fwd.z, 0, -fwd.x )); 
+//    vec3 up = cross(fwd, rgt);
 
     // Unit direction ray.
     //vec3 r = normalize(fwd + FOV*(u.x*rgt + u.y*up));
     // Lens distortion.
     vec3 r = rd; //fwd + FOV*(u.x*rgt + u.y*up);
-    r = normalize(vec3(r.xy, (r.z - length(r.xy)*.125)));
+//    r = normalize(vec3(r.xy, (r.z - length(r.xy)*.125)));
 
 
     // Raymarch.

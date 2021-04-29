@@ -84,9 +84,9 @@ Shader "Skybox/Canyon"
 //-----------------------------------------------------------------------------------
 
 #define LOWDETAIL
-#define HIGH_QUALITY_NOISE
+//#define HIGH_QUALITY_NOISE
 
-float noise1( in vec3 x )
+float noise2( in vec3 x )
 {
     vec3 p = floor(x);
     vec3 f = fract(x);
@@ -104,6 +104,36 @@ float noise1( in vec3 x )
 #endif  
     return mix( rg.x, rg.y, f.z );
 }
+
+
+float hash(float3 v)
+{
+    return frac(sin(dot(v, float3(11.51721, 67.12511, 9.7561))) * 1551.4172);   
+}
+
+float noise1(float3 v)
+{
+    float3 rootV = floor(v);
+    float3 f = smoothstep(0.0, 1.0, frac(v));
+    
+    //Cube vertices values
+    float n000 = hash(rootV);
+    float n001 = hash(rootV + float3(0,0,1));
+    float n010 = hash(rootV + float3(0,1,0));
+    float n011 = hash(rootV + float3(0,1,1));
+    float n100 = hash(rootV + float3(1,0,0));
+    float n101 = hash(rootV + float3(1,0,1));
+    float n110 = hash(rootV + float3(1,1,0));
+    float n111 = hash(rootV + float3(1,1,1));
+    
+    //trilinear interpolation
+    float4 n = lerp(float4(n000, n010, n100, n110), float4(n001, n011, n101, n111), f.z);
+    n.xy = lerp(float2(n.x, n.z), float2(n.y, n.w), f.y);
+    return lerp(n.x, n.y, f.x);
+}
+
+
+
 
 // Standard 2x2 hash algorithm.
 float2 hash22(float2 p) {
@@ -228,7 +258,7 @@ vec4 raycast( in vec3 ro, in vec3 rd, in float tmax )
 {
     float t = 0.1;
     vec3 res = vec3(0.0,0,0);
-    for( int i=0; i<256; i++ )
+    for( int i=0; i<64; i++ )  //i<256; i++ )
     {
         vec4 tmp = map( ro+rd*t );
         res = tmp.ywz;
@@ -252,7 +282,7 @@ float softshadow( in vec3 ro, in vec3 rd, float mint, float k )
 {
     float res = 1.0;
     float t = mint;
-    for( int i=0; i<50; i++ )
+    for( int i=0; i<10; i++ )  //i<50; i++ )
     {
         float h = map(ro + rd*t).x;
         res = min( res, k*h/t );

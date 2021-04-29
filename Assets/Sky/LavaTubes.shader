@@ -597,14 +597,14 @@ float getMist(in vec3 ro, in vec3 rd, in vec3 lp, in float t){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*.01+ _XYZPos;                                             // ray origin
 
    
     // Screen coordinates.
     vec2 uv = (fragCoord - iResolution.xy*0.5)/iResolution.y;
     
     // Camera Setup.
-    vec3 lookAt = vec3(0., 0.0, iTime*4. + 0.1);  // "Look At" position.
+//    vec3 lookAt = vec3(0., 0.0, iTime*4. + 0.1);  // "Look At" position.
     vec3 camPos = ro; //lookAt + vec3(0.0, 0.0, -0.1); // Camera position, doubling as the ray origin.
 
  
@@ -619,10 +619,10 @@ float getMist(in vec3 ro, in vec3 rd, in vec3 lp, in float t){
 //    lightPos.xy += path(lightPos.z);
 
     // Using the above to produce the unit ray-direction vector.
-    float FOV = 3.14159265/2.; // FOV - Field of view.
-    vec3 forward = normalize(lookAt - camPos);
-    vec3 right = normalize(vec3(forward.z, 0., -forward.x )); 
-    vec3 up = cross(forward, right);
+//    float FOV = 3.14159265/2.; // FOV - Field of view.
+//    vec3 forward = normalize(lookAt - camPos);
+//    vec3 right = normalize(vec3(forward.z, 0., -forward.x )); 
+//    vec3 up = cross(forward, right);
 
     // rd - Ray direction.
 //    vec3 rd = normalize(forward + (uv.x*right + uv.y*up)*FOV);

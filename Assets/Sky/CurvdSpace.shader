@@ -325,19 +325,19 @@ mat3 setCamera( in vec3 ro, in vec3 rt, in float cr )
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
                 float3 ro = _WorldSpaceCameraPos.xyz*.01+ _XYZPos;                                             // ray origin
 
-    vec2 p = (-iResolution.xy +2.0*fragCoord.xy) / iResolution.y;
+//    vec2 p = (-iResolution.xy +2.0*fragCoord.xy) / iResolution.y;
 
-    float zo = 1.0 + smoothstep( 5.0, 15.0, abs(iTime-48.0) );
+//    float zo = 1.0 + smoothstep( 5.0, 15.0, abs(iTime-48.0) );
 //    float an = 3.0 + 0.05*iTime + 6.0*iMouse.x/iResolution.x;
 //    vec3 ro = zo*vec3( 2.0*cos(an), 1.0, 2.0*sin(an) );
-    vec3 rt = vec3( 1.0, 0.0, 0.0 );
-    mat3 cam = setCamera( ro, rt, 0.35 );
+//    vec3 rt = vec3( 1.0, 0.0, 0.0 );
+//    mat3 cam = setCamera( ro, rt, 0.35 );
 //    vec3 rd = normalize( cam * vec3( p, -2.0) );
 
     vec3 col = render( ro, rd );
     
-    vec2 q = fragCoord.xy / iResolution.xy;
-    col *= 0.2 + 0.8*pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.1 );
+//    vec2 q = fragCoord.xy / iResolution.xy;
+//    col *= 0.2 + 0.8*pow( 16.0*q.x*q.y*(1.0-q.x)*(1.0-q.y), 0.1 );
 
     fragColor = vec4( col, 1.0 );
 

@@ -327,7 +327,7 @@ vec3 db( sampler2D tx, in vec3 p, in vec3 n, float bf){
                 fixed4 fragColor = tex2D(_MainTex, v.uv);
                 
                 float3 rd = viewDirection;                                                        // ray direction for fragCoord.xy
-                float3 ro = _WorldSpaceCameraPos.xyz+ _XYZPos*100;                                             // ray origin
+                float3 ro = _WorldSpaceCameraPos.xyz*.01+ _XYZPos*100;                                             // ray origin
 
     
     

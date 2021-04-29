@@ -545,7 +545,7 @@ float trace(in vec3 ro, in vec3 rd){
     // Hack to force loop unrolling. I can't say I'm happy with it, but it is what it is. :)
     // If someone has a better idea, feel free to let me know.
     //int zer = int(min(iTime, 0.)); 
-    for(int i = 0; i<128; i++){
+    for(int i = 0; i<64; i++){ //i<128; i++){
     
         d = map(ro + rd*t);
         // Note the "t*b + a" addition. Basically, we're putting less emphasis on accuracy, as
@@ -701,7 +701,7 @@ vec3 doBumpMap(in vec3 p, in vec3 nor, float bumpfactor){
 float softShadow(vec3 ro, vec3 lp, vec3 n, float k){
 
     // More would be nicer. More is always nicer, but not really affordable... Not on my slow test machine, anyway.
-    const int maxIterationsShad = 32; 
+    const int maxIterationsShad = 16; //32; 
     
     ro += n*.0015;
     vec3 rd = lp - ro; // Unnormalized direction ray.
@@ -897,25 +897,25 @@ float getMist(in vec3 ro, in vec3 rd, in vec3 lp, in float t){
 
     
     // Screen coordinates.
-    vec2 u = (fragCoord - iResolution.xy*.5)/iResolution.y;
+//    vec2 u = (fragCoord - iResolution.xy*.5)/iResolution.y;
     
     // Camera Setup.     
 //    vec3 ro = vec3(0, 1.5, iTime*2.); // Camera position, doubling as the ray origin.
-    vec3 lk = ro + vec3(0, -.1, .5);  // "Look At" position.
+//    vec3 lk = ro + vec3(0, -.1, .5);  // "Look At" position.
     
     
     // Using the Z-value to perturb the XY-plane.
     // Sending the camera and "look at" vectors down the tunnel. The "path" function is 
     // synchronized with the distance function.
 //    ro.xy += path(ro.z);
-    lk.xy += path(lk.z);
+//    lk.xy += path(lk.z);
 
  
     // Using the above to produce the unit ray-direction vector.
-    float FOV = 3.14159265/2.5; // FOV - Field of view.
-    vec3 fw = normalize(lk - ro);
-    vec3 rt = normalize(vec3(fw.z, 0, -fw.x )); 
-    vec3 up = cross(fw, rt);
+//    float FOV = 3.14159265/2.5; // FOV - Field of view.
+//    vec3 fw = normalize(lk - ro);
+//    vec3 rt = normalize(vec3(fw.z, 0, -fw.x )); 
+//    vec3 up = cross(fw, rt);
 
     // rd - Ray direction.
 //    vec3 rd = normalize(fw + (u.x*rt + u.y*up)*FOV);
@@ -1116,8 +1116,8 @@ float getMist(in vec3 ro, in vec3 rd, in vec3 lp, in float t){
     // Standard way to do a square vignette. Note that the maxium value value occurs at "pow(0.5, 4.) = 1./16," 
     // so you multiply by 16 to give it a zero to one range. This one has been toned down with a power
     // term to give it more subtlety.
-    u = fragCoord/iResolution.xy;
-    col = min(col, 1.)*pow( 16.*u.x*u.y*(1. - u.x)*(1. - u.y) , .0625);
+//    u = fragCoord/iResolution.xy;
+//    col = min(col, 1.)*pow( 16.*u.x*u.y*(1. - u.x)*(1. - u.y) , .0625);
  
     // Rough gamma correction, and present to screen.
     fragColor = vec4(sqrt(clamp(col, 0., 1.)), 1);

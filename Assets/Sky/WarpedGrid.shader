@@ -455,7 +455,7 @@ float trace(in vec3 ro, in vec3 rd){
     // scene, you wouldn't do this.
     t = hash31(ro.zxy + rd.yzx)*.25;
     [loop]
-    for(int i = 0; i<128; i++){
+    for(int i = 0; i<32; i++){   //i<128; i++){
     
         d = map(ro + rd*t); // Distance function.
         
@@ -508,7 +508,7 @@ vec3 getNormal(in vec3 p){
 float softShadow(vec3 ro, vec3 lp, vec3 n, float k){
 
     // More would be nicer. More is always nicer, but not really affordable... Not on my slow test machine, anyway.
-    const int iter = 24; 
+    const int iter = 12; //24; 
     
     ro += n*.0015;
     vec3 rd = lp - ro; // Unnormalized direction ray.
@@ -613,7 +613,7 @@ vec3 envMap(vec3 p){
     
     // Camera Setup.
     //vec3 
-    ro = vec3(0, 0, iTime*1.5); // Camera position, doubling as the ray origin.
+    ro = vec3(0, 0, iTime*.015); // Camera position, doubling as the ray origin.
     ro.xy += path(ro.z); 
     vec2 roTwist = vec2(0, 0);
     roTwist = mul(roTwist,rot2(-getTwist(ro.z)));
