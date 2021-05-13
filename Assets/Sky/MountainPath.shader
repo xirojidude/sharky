@@ -6,6 +6,7 @@ Shader "Skybox/MountainPath"
         _MainTex ("tex2D", 2D) = "white" {}
         _SunDir ("Sun Dir", Vector) = (-.11,.07,0.99,0) 
         _XYZPos ("XYZ Offset", Vector) = (0, 15, -.25 ,0) 
+        _Scale ("Scale", Float) = 1 
     }
     SubShader
     {
@@ -24,6 +25,7 @@ Shader "Skybox/MountainPath"
 
             uniform sampler2D _MainTex; 
             float4 _SunDir,_XYZPos;
+            float _Scale;
 
             struct appdata
             {
@@ -902,7 +904,7 @@ float3 doColor(in float3 ro, in float3 rd, in float3 lp, float t){
    
 
     // Clamping the scene color, then presenting to the screen.
-    fragColor = (screenUV.x<.002 &&  screenUV.y<.01)?float4(t*.1,0,0,1):float4(sqrt(clamp(sceneColor, 0.0, 1.0)), 1.0);
+    fragColor = (screenUV.x<.002 &&  screenUV.y<.01)?float4(t*.01,0,0,1):float4(sqrt(clamp(sceneColor, 0.0, 1.0)), 1.0);
 
 
                 return fragColor;

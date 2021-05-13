@@ -28,6 +28,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Beat: 0
-    - _Volume: 0.159
+    - _Beat: 0.000012800002
+    - _Volume: 0.499
     m_Colors: []

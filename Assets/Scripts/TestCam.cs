@@ -14,6 +14,11 @@ public class TestCam : UdonSharpBehaviour
     public RenderTexture cameraTexture;
     public Texture2D targetTexture2D;
     public Rect sourceRect;
+    public float YOffset =0f;
+    public float YScale = 1f;
+    private Material skybox;
+    public float platformThickness = 1.0f;
+    public float cameraHeight = 2.0f;
  
     void Start()
     {
@@ -28,8 +33,8 @@ public class TestCam : UdonSharpBehaviour
     {
         //Quaternion headDirection =player.GetRotation();
         Quaternion headDirection = player.GetBoneRotation( HumanBodyBones.Head );
-        Vector3 headPosition = player.GetPosition();
-        cameraPos.position = headPosition;
+        Vector3 bodyPosition = player.GetPosition();
+        cameraPos.position = bodyPosition + new Vector3(0,cameraHeight,0); // Place camera 2m above feet
         cameraPos.rotation = headDirection;
     }
 
@@ -45,11 +50,80 @@ public class TestCam : UdonSharpBehaviour
         targetTexture2D.ReadPixels(new Rect(0, 0, 256, 256), 0, 0, false);
         targetTexture2D.Apply();
         Color[] pix = targetTexture2D.GetPixels(x, y, width, height);
-        float deltaH = pix[0].r*.20f - .09f;
-        Debug.Log("Color:"+ pix[0]);
-        if (FloorCollider != null && deltaH != .10f) 
+
+        skybox = RenderSettings.skybox;
+        Vector3 XYZOffset = new Vector3(0f,0f,0f);
+        float Scale = 1.0f;
+
+        if (skybox!=null) {
+            XYZOffset = skybox.GetVector("_XYZPos");
+            Scale = skybox.GetFloat("_Scale");
+        }
+
+        float groundDistance = (pix[0].r*256f) + (pix[0].g * 65536f) - 0.55f;
+
+
+        float elevation =  -20f; //groundDistance*YScale - YOffset ;
+
+        if (groundDistance < 255) 
         {
-            FloorCollider.position = new Vector3(FloorCollider.position.x, FloorCollider.position.y-deltaH ,FloorCollider.position.z);
+            if (groundDistance > 0) // ground is in sight (within 255cm of camera) 
+            {
+                if (groundDistance < 195) // starting to go underground - move collider up
+                {
+                    // calc elevation (assume we're not falling)
+                    elevation = cameraPos.position.y -cameraHeight + platformThickness*.5f - groundDistance*.01f; 
+
+                } 
+                else // we are hovering above the ground - move collider down
+                {
+                    if (groundDistance > 205) {
+                        elevation = cameraPos.position.y -cameraHeight + platformThickness*.5f - groundDistance*.01f; 
+
+                    }
+                    // otherwise we're in the deadzone 
+                }
+            }
+            else // we are underground :(
+            {
+                // Are we falling ?
+                // teleport player?? we can be underground by .5m before we can't tell how deep we are
+            }
+        }
+
+        // Camera height above ground is [0..255] units
+        // Camera should be 1m above ground
+        // need to calculate scaleFactor to convert between units and meters     HeightInMeters = HeightInUnits * YScale
+        // Put camera 2 meters above player's feet
+
+        // Unity _WorldSpaceCameraPos * Scale + _XYZPos
+        //  _UnityOrigin
+        //  _ShaderOrigin
+        //  _WorldSpaceCameraPos - get from unity
+        //  _Scale - Get from material parameters??? ((Material.GetFloat("_Scale")) ... or calculate by ???
+        //  _XYZPos - Get from material parameters??? (Material.GetVector("_XYZPos") ) ... or calculate
+        //  _DistanceToGround - Stored as color of bottom-left pixel [0..1] (use cm as units??) 
+
+        // Elevation = _WorldSpaceCameraPos - _DistanceToGround 
+
+        // If ground is beyond view move collider to default level -100m 
+        // otherwise 
+        //      if ground is outside deadzone 2m below camera +/- 5cm
+        //          recalc 
+        //      otherwise  
+        //          don't move the collider
+
+
+        Debug.Log("Elevation:" + elevation + " Ground:" + groundDistance + " Color:"+ pix[0]);
+        if (FloorCollider != null) 
+        {
+            // Actual height of ground is unknown because
+            //  - shader XYZOffset 
+            //  - distance units in shader are not consistent
+
+            // Make collider height = ground elevation
+            // ground elevation(meters) = cameraWorldHeight(meters) - cameraShaderHeight(units)
+            FloorCollider.position = new Vector3(FloorCollider.position.x, elevation ,FloorCollider.position.z);
 
         }
 

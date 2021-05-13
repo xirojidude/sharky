@@ -44,6 +44,9 @@ public class SkyController : UdonSharpBehaviour
     public Toggle globalCheckbox;
     bool _globalSky = true;
 
+    public Toggle potatoCheckbox;
+    bool _potatoSky = false;
+
 /*
 0 blizzard
 1 spaceship
@@ -67,10 +70,11 @@ public class SkyController : UdonSharpBehaviour
 19 music
 20 deathstar
 */
-
+    //                                  A               B                   C               D               E               F                   G                   H               I                   J                   K                   
     private int[] soundMap = new int[] {0,16,2,10,9,16  ,0,17,20,3,14,20  ,2,20,8,9,15,3  ,0,2,12,17,15,3  ,3,7,0,5,11,5  ,4,15,19,19,19,19  ,19,15,18,18,16,19  ,0,14,3,19,19,16   ,0,14,3,19,19,16    ,0,14,3,19,19,16    ,0,14,3,19,19,16};
     private int[] sunMap = new int[]   {1,1,1,1,1,0     ,1,1,1,1,0,1      ,1,1,2,1,1,1    ,1,0,0,0,1,1     ,1,1,1,0,0,0   ,0,1,0,0,0,0       ,0,1,0,0,0,0        ,0,0,1,0,0,1       ,0,0,1,0,0,1        ,0,0,1,0,0,1        ,0,0,1,0,0,1};
     private int[] musicMap = new int[] {0,0,0,0,0,0     ,0,0,0,0,0,0      ,0,0,0,0,0,0    ,0,0,0,0,0,0     ,0,0,0,0,0,0   ,0,0,1,1,1,1       ,1,0,0,0,0,1        ,0,0,0,1,1,0       ,0,0,0,1,1,0        ,0,0,0,1,1,0        ,0,0,0,1,1,0};
+    private int[] potatoMap = new int[] {1,0,1,1,0,0     ,0,0,1,0,0,0      ,1,1,0,0,0,0    ,0,0,0,0,1,0     ,0,1,0,0,0,0   ,0,1,0,1,0,0       ,0,1,0,0,0,0        ,0,1,0,0,0,0       ,0,0,0,1,1,0        ,0,0,0,1,0,0        ,0,0,0,0,0,0};
 
 //    private string[] SkyParams  = {"Panoskybox, Mountain Clouds,  TER, 1, 0, 0, wind, 1"}; //new string[1];
 //    private string[] SkyParamsMap = new string[48];
@@ -79,61 +83,83 @@ public class SkyController : UdonSharpBehaviour
 //    SkyParams[0] = "Panoskybox, Mountain Clouds,  TER, 1, 0, 0, wind, 1";
 /*
     SkyParamsMap = {
-    "PanoSkybox",
+    "PanoSkybox",               // A
     "FoggyMountain",
     "StarNestSkybox",
     "Ocean",
     "MarsJetPack",
     "CanyonPass",
 
-    "tinyCloud",
+    "tinyCloud",                // B
     "FoggyMountainGreen1",
     "PanoSkybox3",
     "AbstractTerrainObjects",
     "Xann",
     "DeathStar",
 
-    "Stars",
+    "Stars",                    // C
     "SkyboxMinimal",
     "Aurora",
     "PlanetGreen",
     "DesertPassage",
     "DesertSand",
 
-    "PlanetMars",
+    "PlanetMars",               // D
     "FractalStarfield",
     "Fissure",
     "Postcard",
     "DesertCanyon",
     "MountainPath",
     
-    "Terrainz",
+    "Terrainz",                 // E
     "GrassyHillis",
     "PlanetOther",
     "Fissure",
     "Gargantuan",
     "LavaPlanet",
 
-    "LunarDebris",
+    "LunarDebris",              // F
     "RockyGorge",
     "ProceduralTechRings",
     "RainboxCave",
     "JetStream",
     "JaszUniverse",
 
-    "SimplicityGalaxy",
+    "SimplicityGalaxy",         // G
     "DesertCanyon",
     "Virus",
     "Biomine",
     "StarNursery",
     "Doodling",
 
-    "SkinPeeler",
+    "SkinPeeler",               // H
     "SunSurface",
     "CombustibleClouds",
     "TransparentIsoceles",
     "VenusBebop",
-    "NeptuneRacing"};
+    "NeptuneRacing"
+    
+    "AbandonedCanyon",          // I
+    "AfterTheRain",
+    "WinterCanyon",
+    "CellularLattice",
+    "CloudCity",
+    "CloudFlight",
+
+    "ImpactCrater",             // J 
+    "CurvedSpace",
+    "EntangledVines",
+    "FractalLand",
+    "GlassyField",
+    "IndustrialTunnel",
+
+    "JaggedPlain",              // K
+    "LandOfGreen",
+    "MegaParsecs",
+    "ProteanClouds",
+    "SkyLine",
+    "WarpedGrid"
+    };
 
 */
 
@@ -319,6 +345,14 @@ new SkyItem {id=	85	, shader=	"Xyptonjtroz"	, label=	"Xyptonjtroz"	, cat=	"TER"	
         Debug.Log("******************  NextSky Triggered  ***********************");
 
         _currentSky++;
+        if (_currentSky>=skybox.Length) _currentSky = 0;
+
+        while (_potatoSky && potatoMap[_currentSky]!=1 ) // should add check to prevent infinite loop if there are no potato skies
+        {
+            _currentSky++;
+            if (_currentSky>=skybox.Length) _currentSky = 0;
+        }
+
         showSky(_currentSky);
     }
 
@@ -327,11 +361,21 @@ new SkyItem {id=	85	, shader=	"Xyptonjtroz"	, label=	"Xyptonjtroz"	, cat=	"TER"	
         Debug.Log("******************  PrevSky Triggered  ***********************");
 
         _currentSky--;
+        if (_currentSky<0) _currentSky = skybox.Length-1;
+
+        while (_potatoSky && potatoMap[_currentSky]!=1 ) // should add check to prevent infinite loop if there are no potato skies
+        {
+            _currentSky--;
+            if (_currentSky<0) _currentSky = skybox.Length-1;
+        }
         showSky(_currentSky);
     }
 
     private void showSky(int id) 
     {
+        if (_potatoSky && potatoMap[id]!=1 )
+            return;
+
         _currentSky = id;
         if (_currentSky>=skybox.Length) _currentSky = 0;
         if (_currentSky<0) _currentSky = skybox.Length-1;
@@ -374,7 +418,7 @@ new SkyItem {id=	85	, shader=	"Xyptonjtroz"	, label=	"Xyptonjtroz"	, cat=	"TER"	
         }
 
 
-        if (_globalSky) {
+        if (_globalSky && !_potatoSky) {
   //          if (Networking.IsOwner(gameObject)) 
                 _syncedSky = _currentSky;
         }
@@ -410,9 +454,18 @@ new SkyItem {id=	85	, shader=	"Xyptonjtroz"	, label=	"Xyptonjtroz"	, cat=	"TER"	
     public void ToggleGlobal()
     {
         _globalSky =  globalCheckbox.isOn;
-        if (_globalSky) 
+        if (_globalSky && !_potatoSky) 
         {
             _currentSky = _syncedSky;
+            showSky(_currentSky);
+        }
+    }
+
+    public void TogglePotato()
+    {
+        _potatoSky =  potatoCheckbox.isOn;
+        if (_potatoSky) {
+            _currentSky = 0;
             showSky(_currentSky);
         }
     }
